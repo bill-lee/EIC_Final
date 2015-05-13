@@ -11,7 +11,7 @@ void EKF_SLAM::Initial(const std::vector<std::vector<Line> >& lineFeature)
     cv::Mat imgg(500,500,CV_8UC3);
     imgg=cv::Scalar::all(0);
     cv::circle(imgg, cv::Point(0+250,0+250), 3, cv::Scalar(255,0,255), 1 );
-    //n筆掃描所擷取的線特徵
+    //the line features of n scans
     for(int i=0;i!=lineFeature.size();++i)
     {
         vector<Feature> obs;
@@ -21,7 +21,7 @@ void EKF_SLAM::Initial(const std::vector<std::vector<Line> >& lineFeature)
 
         for(int j=0;j!=lineFeature[i].size();++j)
         {
-            //將線特徵轉換為一般特徵
+            // convert line feature to normal feature
             Feature temp;
             temp.featureMean=lineFeature[i][j].lineMean.clone();
             temp.featureCovariance=lineFeature[i][j].lineCovariance.clone();
@@ -29,7 +29,7 @@ void EKF_SLAM::Initial(const std::vector<std::vector<Line> >& lineFeature)
             obs.push_back(temp);
 
 
-            //並將特徵轉到世界座標上
+            // convert feature to world space
             Feature temp11;
 
 

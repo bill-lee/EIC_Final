@@ -4,28 +4,33 @@
 EIC_Test::EIC_Test(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::EIC_Test),
-    myrobot(new lab405::MyRobot()),
+    myekfslam(new lab405::MyEFKSLAM()),
+//    myrobot(new lab405::MyRobot()),
     sensorsetup(new SensorSetup()),
     testEKFTimer(new QTimer)
 {
+    Robot_Thread = new QThread(this);
+    myekfslam->myrobot->moveToThread(Robot_Thread);
+    Robot_Thread->start();
+
     ui->setupUi(this);
 
     // Step Motor default
-    myrobot->step_motor->Open(sensorsetup->GetStepCOM(), sensorsetup->GetStepBaud().toInt());
-    if (myrobot->step_motor->isOpen())
-        ui->textBrowser->append("[Step]\t"
-                                + sensorsetup->GetStepCOM()
-                                + " Baud: " + sensorsetup->GetStepBaud()
-                                + "\tis opened");
-    else
-    {
-        ui->textBrowser->setTextColor(QColor(255, 0, 0));
-        ui->textBrowser->append("[Error] Cannot open "
-                                + sensorsetup->GetStepCOM()
-                                + " Baud: "
-                                + sensorsetup->GetStepBaud());
-        ui->textBrowser->setTextColor(QColor(0, 0, 0));
-    }
+//    myrobot->step_motor->Open(sensorsetup->GetStepCOM(), sensorsetup->GetStepBaud().toInt());
+//    if (myrobot->step_motor->isOpen())
+//        ui->textBrowser->append("[Step]\t"
+//                                + sensorsetup->GetStepCOM()
+//                                + " Baud: " + sensorsetup->GetStepBaud()
+//                                + "\tis opened");
+//    else
+//    {
+//        ui->textBrowser->setTextColor(QColor(255, 0, 0));
+//        ui->textBrowser->append("[Error] Cannot open "
+//                                + sensorsetup->GetStepCOM()
+//                                + " Baud: "
+//                                + sensorsetup->GetStepBaud());
+//        ui->textBrowser->setTextColor(QColor(0, 0, 0));
+//    }
 //    // Left DC Motor default
 //    myrobot->left_dcmotor->Open(sensorsetup->GetLMotorCOM(), sensorsetup->GetLMotorBaud().toInt());
 //    if (myrobot->left_dcmotor->isOpen())
@@ -81,7 +86,7 @@ EIC_Test::EIC_Test(QWidget *parent) :
     timer = new QTimer();
     timer->setInterval(10);
     //
-    connect(this, SIGNAL(test()), myrobot, SLOT(rotatethread()));
+    connect(this, SIGNAL(test()), myekfslam->myrobot, SLOT(rotatethread()));
     // create action class for menu
     CreateAction();
     // create menu
@@ -93,8 +98,14 @@ EIC_Test::EIC_Test(QWidget *parent) :
 
     // shih ekf slam connect
     connect(testEKFTimer, SIGNAL(timeout()), this, SLOT(EKF_Timer()));
+
+    //data collect thread
+    collector=new DataGrabThread;
+    connect(collector,SIGNAL(sendOdemtryLaserData(const int ,const int ,const std::vector<double>)),this,SLOT(setOdometryLaserData(const int ,const int ,const std::vector<double>)));
+    connect(collector,SIGNAL(sendCommandAccomplishment()),this,SLOT(SetMotionCommand()));
+
 //    SLAM_Robot = new Shih_MyRobot;
-    myrobot = new lab405::MyRobot;
+    myekfslam->myrobot = new lab405::MyRobot;
     odoValuePrevious.x=0; //x:right odo y:left odo
     odoValuePrevious.y=0;
     odoValueCurrent.x=0; //x:right odo y:left odo
@@ -106,6 +117,7 @@ EIC_Test::EIC_Test(QWidget *parent) :
 
     scenesTimer=new QTimer;
     connect(scenesTimer,SIGNAL(timeout()),this,SLOT(singleSceneAcquisition()));
+
 
 }
 
@@ -120,6 +132,9 @@ EIC_Test::~EIC_Test()
 
 //    collector->wait();
 //    delete collector;
+    // wait thread for destroyed
+    Robot_Thread->wait();
+
 
     delete ui;
 }
@@ -131,8 +146,8 @@ void EIC_Test::on_pushButton_step_motor_clicked()
 
 void EIC_Test::on_pushButton_step_com_clicked()
 {
-    myrobot->step_motor->Open(ui->comboBox_step_comport->currentText(), ui->comboBox_step_baudrate->currentText().toInt());
-    if (myrobot->step_motor->isOpen())
+    myekfslam->myrobot->step_motor->Open(ui->comboBox_step_comport->currentText(), ui->comboBox_step_baudrate->currentText().toInt());
+    if (myekfslam->myrobot->step_motor->isOpen())
         ui->textBrowser->append(ui->comboBox_step_comport->currentText()
                                 + " Baud:" + ui->comboBox_step_baudrate->currentText()
                                 + " is opened");
@@ -144,9 +159,9 @@ void EIC_Test::on_pushButton_step_com_clicked()
 
 void EIC_Test::on_pushButton_relangle_clicked()
 {
-    if (myrobot->step_motor->isOpen())
+    if (myekfslam->myrobot->step_motor->isOpen())
     {
-        myrobot->step_motor->RotateRelativeAngle(ui->doubleSpinBox_step_relangle->value());
+        myekfslam->myrobot->step_motor->RotateRelativeAngle(ui->doubleSpinBox_step_relangle->value());
         ui->textBrowser->append(QString("[relative] Step motor move %1 degrees").arg(ui->doubleSpinBox_step_relangle->value()));
     }
     else
@@ -156,9 +171,9 @@ void EIC_Test::on_pushButton_relangle_clicked()
 
 void EIC_Test::on_pushButton_step_absangle_clicked()
 {
-    if (myrobot->step_motor->isOpen())
+    if (myekfslam->myrobot->step_motor->isOpen())
     {
-        myrobot->step_motor->RotateRelativeAngle(ui->doubleSpinBox_step_absangle->value());
+        myekfslam->myrobot->step_motor->RotateRelativeAngle(ui->doubleSpinBox_step_absangle->value());
         ui->textBrowser->append(QString("[absolute] Step motor move to %1 degrees").arg(ui->doubleSpinBox_step_relangle->value()));
     }
     else
@@ -167,10 +182,10 @@ void EIC_Test::on_pushButton_step_absangle_clicked()
 
 void EIC_Test::on_pushButton_laser291_open_clicked()
 {
-    myrobot->laser_lms291->Open(ui->comboBox_laser291_comport->currentText()
+    myekfslam->myrobot->laser_lms291->Open(ui->comboBox_laser291_comport->currentText()
                    , ui->comboBox_laser291_baudrate->currentText().toInt()
                    , ui->comboBox_laser291_pre_baudrate->currentText().toInt());
-    if (myrobot->laser_lms291->isOpen())
+    if (myekfslam->myrobot->laser_lms291->isOpen())
     {
         ui->textBrowser->append(ui->comboBox_laser291_comport->currentText()
                                 + " preBaud: " + ui->comboBox_laser291_pre_baudrate->currentText()
@@ -192,39 +207,39 @@ void EIC_Test::on_pushButton_laser291_trigger_clicked()
 //    connect(myrobot->laser_lms291, SIGNAL(readyRead()), myrobot->laser_lms291, SLOT(CheckCommBaud()));
 //    connect(myrobot->laser_lms291, SIGNAL(headcorrect()), this, SLOT(StartToGetData()));
 //    myrobot->laser_lms291->TriggerContinuousMode();
-    myrobot->laser_lms291->TriggerOneScan();
+    myekfslam->myrobot->laser_lms291->TriggerOneScan();
 }
 
 void EIC_Test::StartToGetData()
 {
-    disconnect(myrobot->laser_lms291, SIGNAL(readyRead()), myrobot->laser_lms291, SLOT(CheckCommBaud()));
-    connect(myrobot->laser_lms291, SIGNAL(readyRead()), myrobot->laser_lms291, SLOT(DataSegment()));
+    disconnect(myekfslam->myrobot->laser_lms291, SIGNAL(readyRead()), myekfslam->myrobot->laser_lms291, SLOT(CheckCommBaud()));
+    connect(myekfslam->myrobot->laser_lms291, SIGNAL(readyRead()), myekfslam->myrobot->laser_lms291, SLOT(DataSegment()));
 //    connect(myrobot->laser_lms291, SIGNAL(GetOneLaserScan(QByteArray*)), myrobot->laser_lms291, SLOT(ProcessScanThread(QByteArray*)));
 }
 
 void EIC_Test::on_pushButton_laser291_stop_clicked()
 {
     cv::destroyAllWindows();
-    disconnect(myrobot->laser_lms291, SIGNAL(readyRead()), myrobot->laser_lms291, SLOT(DataSegment()));
-    disconnect(myrobot->laser_lms291, SIGNAL(GetOneLaserScan(QByteArray*)), myrobot->laser_lms291, SLOT(ProcessScanThread(QByteArray*)));
-    myrobot->laser_lms291->StopContinuousMode();
+    disconnect(myekfslam->myrobot->laser_lms291, SIGNAL(readyRead()), myekfslam->myrobot->laser_lms291, SLOT(DataSegment()));
+    disconnect(myekfslam->myrobot->laser_lms291, SIGNAL(GetOneLaserScan(QByteArray*)), myekfslam->myrobot->laser_lms291, SLOT(ProcessScanThread(QByteArray*)));
+    myekfslam->myrobot->laser_lms291->StopContinuousMode();
 }
 
 void EIC_Test::on_pushButton_step_sethome_clicked()
 {
-    myrobot->step_motor->SetHome();
+    myekfslam->myrobot->step_motor->SetHome();
     ui->textBrowser->append(QString("Set Home Done!"));
 }
 
 void EIC_Test::on_pushButton_step_gohome_clicked()
 {
-    myrobot->step_motor->GoHome();
+    myekfslam->myrobot->step_motor->GoHome();
     ui->textBrowser->append(QString("Go Home!"));
 }
 
 void EIC_Test::on_pushButton_step_stop_clicked()
 {
-    myrobot->step_motor->Stop();
+    myekfslam->myrobot->step_motor->Stop();
     ui->textBrowser->append(QString("Stop!"));
 }
 
@@ -232,7 +247,7 @@ void EIC_Test::on_pushButton_robot_data_acquisition_clicked()
 {
     ui->lineEdit_robot_filename->setText(QDateTime::currentDateTime().toString() + QTime::currentTime().toString().replace(QString(":"), QString("")));
     ui->textBrowser->append(QString("Start data acquisition!"));
-    myrobot->DataAcquisition(ui->doubleSpinBox_robot_startangle->value(),
+    myekfslam->myrobot->DataAcquisition(ui->doubleSpinBox_robot_startangle->value(),
                              int(ui->doubleSpinBox_robot_laser_count->value()),
                              360.0, QString("test")
                              , ui->checkBox_robot_withcolor->isChecked());
@@ -242,12 +257,12 @@ void EIC_Test::on_pushButton_robot_data_acquisition_clicked()
 
 void EIC_Test::on_pushButton_clicked()
 {
-    connect(myrobot->step_motor, SIGNAL(PositionAttained()), myrobot->laser_lms291, SLOT(StartOneScan()));
+    connect(myekfslam->myrobot->step_motor, SIGNAL(PositionAttained()), myekfslam->myrobot->laser_lms291, SLOT(StartOneScan()));
     // open notify command
-    myrobot->step_motor->OpenANSWMode();
+    myekfslam->myrobot->step_motor->OpenANSWMode();
     // go to the initial position
 //    myrobot->step_motor->RotateAbsoluteAngle(0);
-    myrobot->step_motor->RotateRelativeAngle(1.0);
+    myekfslam->myrobot->step_motor->RotateRelativeAngle(1.0);
 
 
 }
@@ -260,7 +275,7 @@ void EIC_Test::on_pushButton_step_absangle_destroyed()
 void EIC_Test::on_pushButton_2_clicked()
 {
 
-    myrobot->laser_lms291->TriggerOneScan();
+    myekfslam->myrobot->laser_lms291->TriggerOneScan();
 
 //    const uint8_t dataheader[7] = {0x02, 0x80, 0xD6, 0x02, 0xB0, 0x69, 0x01};
 //    int N = 7;
@@ -289,23 +304,23 @@ void EIC_Test::CommandResponse()
 
 void EIC_Test::on_pushButton_robot_stop_clicked()
 {
-    myrobot->StopDataAcquisition();
+    myekfslam->myrobot->StopDataAcquisition();
 }
 
 void EIC_Test::on_pushButton_3_clicked()
 {
-    myrobot->laser_lms291->StopContinuousMode();
+    myekfslam->myrobot->laser_lms291->StopContinuousMode();
 }
 
 void EIC_Test::on_pushButton_4_clicked()
 {
-    myrobot->laser_lms291->TriggerContinuousMode();
+    myekfslam->myrobot->laser_lms291->TriggerContinuousMode();
 
 }
 
 void EIC_Test::on_pushButton_5_clicked()
 {
-    myrobot->laser_lms291->StopContinuousMode();
+    myekfslam->myrobot->laser_lms291->StopContinuousMode();
 }
 
 void EIC_Test::on_pushButton_6_clicked()
@@ -315,25 +330,25 @@ void EIC_Test::on_pushButton_6_clicked()
 
 void EIC_Test::on_pushButton_7_clicked()
 {
-    myrobot->laser_lms291->TriggerContinuousMode();
+    myekfslam->myrobot->laser_lms291->TriggerContinuousMode();
 }
 
 void EIC_Test::on_pushButton_8_clicked()
 {
-    myrobot->laser_lms291->clear();
+    myekfslam->myrobot->laser_lms291->clear();
 }
 
 void EIC_Test::on_pushButton_9_clicked()
 {
-    myrobot->laser_lms291->StopContinuousMode();
+    myekfslam->myrobot->laser_lms291->StopContinuousMode();
 }
 
 void EIC_Test::on_pushButton_robot_closeall_clicked()
 {
-    if (myrobot->laser_lms291->isOpen())
-        myrobot->laser_lms291->close();
-    if (myrobot->step_motor->isOpen())
-        myrobot->step_motor->close();
+    if (myekfslam->myrobot->laser_lms291->isOpen())
+        myekfslam->myrobot->laser_lms291->close();
+    if (myekfslam->myrobot->step_motor->isOpen())
+        myekfslam->myrobot->step_motor->close();
 }
 
 void EIC_Test::ShowCameraOpened()
@@ -400,9 +415,9 @@ void EIC_Test::on_pushButton_12_clicked()
 
 void EIC_Test::on_pushButton_dcmotor_right_comport_clicked()
 {
-    myrobot->right_dcmotor->Open(ui->comboBox_dcmotor_right_comport->currentText(),
+    myekfslam->myrobot->right_dcmotor->Open(ui->comboBox_dcmotor_right_comport->currentText(),
                                  ui->comboBox_dcmotor_right_baudrate->currentText().toInt());
-    if (myrobot->right_dcmotor->isOpen())
+    if (myekfslam->myrobot->right_dcmotor->isOpen())
         ui->textBrowser->append(
                     "Right DC Motor: "
                     + ui->comboBox_dcmotor_right_comport->currentText()
@@ -416,9 +431,9 @@ void EIC_Test::on_pushButton_dcmotor_right_comport_clicked()
 
 void EIC_Test::on_pushButton_dcmotor_left_comport_clicked()
 {
-    myrobot->left_dcmotor->Open(ui->comboBox_dcmotor_left_comport->currentText(),
+    myekfslam->myrobot->left_dcmotor->Open(ui->comboBox_dcmotor_left_comport->currentText(),
                                 ui->comboBox_dcmotor_left_baudrate->currentText().toInt());
-    if (myrobot->left_dcmotor->isOpen())
+    if (myekfslam->myrobot->left_dcmotor->isOpen())
         ui->textBrowser->append(
                     "Right DC Motor: "
                     + ui->comboBox_dcmotor_left_comport->currentText()
@@ -432,18 +447,18 @@ void EIC_Test::on_pushButton_dcmotor_left_comport_clicked()
 
 void EIC_Test::on_pushButton_dcmotor_front_clicked()
 {
-    myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
-    if (myrobot->right_dcmotor->isOpen() && myrobot->left_dcmotor->isOpen())
+    myekfslam->myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
     {
         ui->textBrowser->append(QString("Go Forward %1m").arg(ui->doubleSpinBox_dcmotor_distance->value()));
-        myrobot->GoForward(ui->doubleSpinBox_dcmotor_distance->value(),
+        myekfslam->myrobot->GoForward(ui->doubleSpinBox_dcmotor_distance->value(),
                            ui->doubleSpinBox_dcmotor_velocity->value());
     }
     else
     {
         ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
-                                .arg(myrobot->right_dcmotor->isOpen())
-                                .arg(myrobot->left_dcmotor->isOpen()));
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
     }
 //    ui->textEdit->append("=====================");
 //    RightMotor->SetVelocity(0);
@@ -486,68 +501,68 @@ void EIC_Test::on_pushButton_dcmotor_front_clicked()
 
 void EIC_Test::on_pushButton_dcmotor_back_clicked()
 {
-    myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
-    if (myrobot->right_dcmotor->isOpen() && myrobot->left_dcmotor->isOpen())
+    myekfslam->myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
     {
         ui->textBrowser->append(QString("Go Backward %1m").arg(ui->doubleSpinBox_dcmotor_distance->value()));
-        myrobot->GoBackward(ui->doubleSpinBox_dcmotor_distance->value(),
+        myekfslam->myrobot->GoBackward(ui->doubleSpinBox_dcmotor_distance->value(),
                            ui->doubleSpinBox_dcmotor_velocity->value());
     }
     else
     {
         ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
-                                .arg(myrobot->right_dcmotor->isOpen())
-                                .arg(myrobot->left_dcmotor->isOpen()));
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
     }
 }
 
 void EIC_Test::on_pushButton_dcmotor_left_clicked()
 {
-    myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
-    if (myrobot->right_dcmotor->isOpen() && myrobot->left_dcmotor->isOpen())
+    myekfslam->myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
     {
         ui->textBrowser->append(QString("Turn Left %1 degrees").arg(ui->doubleSpinBox_dcmotor_angle->value()));
-        myrobot->TurnLeft(ui->doubleSpinBox_dcmotor_angle->value(),
+        myekfslam->myrobot->TurnLeft(ui->doubleSpinBox_dcmotor_angle->value(),
                           ui->doubleSpinBox_dcmotor_velocity->value());
     }
     else
     {
         ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
-                                .arg(myrobot->right_dcmotor->isOpen())
-                                .arg(myrobot->left_dcmotor->isOpen()));
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
     }
 }
 
 void EIC_Test::on_pushButton_dcmotor_right_clicked()
 {
-    myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
-    if (myrobot->right_dcmotor->isOpen() && myrobot->left_dcmotor->isOpen())
+    myekfslam->myrobot->odo_filename = ui->lineEdit_dcmotor_odometer->text().toStdString();
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
     {
         ui->textBrowser->append(QString("Turn Right %1 degrees").arg(ui->doubleSpinBox_dcmotor_angle->value()));
-        myrobot->TurnRight(ui->doubleSpinBox_dcmotor_angle->value(),
+        myekfslam->myrobot->TurnRight(ui->doubleSpinBox_dcmotor_angle->value(),
                           ui->doubleSpinBox_dcmotor_velocity->value());
     }
     else
     {
         ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
-                                .arg(myrobot->right_dcmotor->isOpen())
-                                .arg(myrobot->left_dcmotor->isOpen()));
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
     }
 }
 
 void EIC_Test::on_pushButton_dcmotor_stop_clicked()
 {
-    if (myrobot->right_dcmotor->isOpen() && myrobot->left_dcmotor->isOpen())
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
     {
-        myrobot->right_dcmotor->Stop();
-        myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
         ui->textBrowser->append(QString("Stop"));
     }
     else
     {
         ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
-                                .arg(myrobot->right_dcmotor->isOpen())
-                                .arg(myrobot->left_dcmotor->isOpen()));
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
     }
 }
 
@@ -573,7 +588,7 @@ void EIC_Test::on_pushButton_robot_trigger_clicked()
     if (!ui->pushButton_robot_connect->isVisible())
     {
         ui->progressBar_robot->setMaximum(ui->doubleSpinBox_robot_laser_count->value() - 1);
-        myrobot->DataAcquisitionConti(ui->doubleSpinBox_robot_startangle->value(),
+        myekfslam->myrobot->DataAcquisitionConti(ui->doubleSpinBox_robot_startangle->value(),
                                       int(ui->doubleSpinBox_robot_laser_count->value()),
                                       ui->doubleSpinBox_robot_endangle->value(),
                                       ui->lineEdit_robot_filename->text(),
@@ -591,14 +606,14 @@ void EIC_Test::on_pushButton_robot_trigger_clicked()
 
 void EIC_Test::on_pushButton_robot_disconnect_clicked()
 {
-    disconnect(myrobot, SIGNAL(CameraOpened()), this, SLOT(ShowCameraOpened()));
-    disconnect(myrobot, SIGNAL(ProgressBarSignal(int)), ui->progressBar_robot, SLOT(setValue(int)));
+    disconnect(myekfslam->myrobot, SIGNAL(CameraOpened()), this, SLOT(ShowCameraOpened()));
+    disconnect(myekfslam->myrobot, SIGNAL(ProgressBarSignal(int)), ui->progressBar_robot, SLOT(setValue(int)));
 //    disconnect(myrobot, SIGNAL(DatasegmentSignal(int)), this, SLOT(ShowDataSegement(int)));
 //    disconnect(myrobot, SIGNAL(PushBufferSignal(int)), this, SLOT(ShowPushBuffer(int)));
-    disconnect(myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(ShowFinishedDataAcquisition(int)));
-    disconnect(myrobot, SIGNAL(CheckFinishOneScan(int, bool, bool)), this, SLOT(ShowFinishOneScan(int, bool, bool)));
-    disconnect(myrobot, SIGNAL(CompleteWriteData()), this, SLOT(ShowFinishWriteData()));
-    myrobot->DisconnectDataAcquisition(ui->checkBox_robot_withcolor->isChecked());
+    disconnect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(ShowFinishedDataAcquisition(int)));
+    disconnect(myekfslam->myrobot, SIGNAL(CheckFinishOneScan(int, bool, bool)), this, SLOT(ShowFinishOneScan(int, bool, bool)));
+    disconnect(myekfslam->myrobot, SIGNAL(CompleteWriteData()), this, SLOT(ShowFinishWriteData()));
+    myekfslam->myrobot->DisconnectDataAcquisition(ui->checkBox_robot_withcolor->isChecked());
 
     ui->textBrowser->append(QString("Disconnect Data Aquisition!"));
 
@@ -608,17 +623,17 @@ void EIC_Test::on_pushButton_robot_disconnect_clicked()
 
 void EIC_Test::on_pushButton_robot_connect_clicked()
 {
-    if (myrobot->laser_lms291->isOpen() && myrobot->step_motor->isOpen())
+    if (myekfslam->myrobot->laser_lms291->isOpen() && myekfslam->myrobot->step_motor->isOpen())
     {
-        connect(myrobot, SIGNAL(CameraOpened()), this, SLOT(ShowCameraOpened()));
-        connect(myrobot, SIGNAL(ProgressBarSignal(int)), ui->progressBar_robot, SLOT(setValue(int)));
-        connect(myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(ShowFinishedDataAcquisition(int)));
+        connect(myekfslam->myrobot, SIGNAL(CameraOpened()), this, SLOT(ShowCameraOpened()));
+        connect(myekfslam->myrobot, SIGNAL(ProgressBarSignal(int)), ui->progressBar_robot, SLOT(setValue(int)));
+        connect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(ShowFinishedDataAcquisition(int)));
 //        connect(myrobot, SIGNAL(DatasegmentSignal(int)), this, SLOT(ShowDataSegement(int)));
 //        connect(myrobot, SIGNAL(PushBufferSignal(int)), this, SLOT(ShowPushBuffer(int)));
-        connect(myrobot, SIGNAL(CheckFinishOneScan(int, bool, bool)), this, SLOT(ShowFinishOneScan(int, bool, bool)));
-        connect(myrobot, SIGNAL(CompleteWriteData()), this, SLOT(ShowFinishWriteData()));
+        connect(myekfslam->myrobot, SIGNAL(CheckFinishOneScan(int, bool, bool)), this, SLOT(ShowFinishOneScan(int, bool, bool)));
+        connect(myekfslam->myrobot, SIGNAL(CompleteWriteData()), this, SLOT(ShowFinishWriteData()));
 
-        myrobot->ConnectDataAcquisition(ui->checkBox_robot_withcolor->isChecked());
+        myekfslam->myrobot->ConnectDataAcquisition(ui->checkBox_robot_withcolor->isChecked());
         ui->textBrowser->append(QString("Connect Finished!"));
 
         ui->pushButton_robot_connect->setVisible(false);
@@ -627,23 +642,23 @@ void EIC_Test::on_pushButton_robot_connect_clicked()
     else
     {
         ui->textBrowser->setTextColor(QColor(255, 0, 0));
-        ui->textBrowser->append(QString("Please Open Devices First! laser: %1, step: %2").arg(myrobot->laser_lms291->isOpen()).arg(myrobot->step_motor->isOpen()));
+        ui->textBrowser->append(QString("Please Open Devices First! laser: %1, step: %2").arg(myekfslam->myrobot->laser_lms291->isOpen()).arg(myekfslam->myrobot->step_motor->isOpen()));
         ui->textBrowser->setTextColor(QColor(0, 0, 0));
     }
 }
 
 void EIC_Test::on_pushButton_robot_stoptrigger_clicked()
 {
-    myrobot->StopDataAcquisitionConti();
+    myekfslam->myrobot->StopDataAcquisitionConti();
     ui->textBrowser->append(QString("Stop Data Acquisition!"));
 }
 
 void EIC_Test::on_pushButton_10_clicked()
 {
-    myrobot->ConnectSpinData();
-    myrobot->SpinData();
-    myrobot->step_motor->SetMaxVelocity(100);
-    myrobot->step_motor->RotateRelativeAngle(360);
+    myekfslam->myrobot->ConnectSpinData();
+    myekfslam->myrobot->SpinData();
+    myekfslam->myrobot->step_motor->SetMaxVelocity(100);
+    myekfslam->myrobot->step_motor->RotateRelativeAngle(360);
 
 //    // for allowing boost::shared_ptr legal for connect
 //    qRegisterMetaType<boost::shared_ptr<cv::Mat>> ("boost::shared_ptr<cv::Mat>");
@@ -660,11 +675,11 @@ void EIC_Test::on_pushButton_SLAM_clicked()
 {
 
     qRegisterMetaType<boost::shared_ptr<QByteArray>> ("boost::shared_ptr<QByteArray>");
-    connect(myrobot->laser_slam, SIGNAL(GetContiOneScan(boost::shared_ptr<QByteArray>)),
-           myrobot->laser_slam, SLOT(ShowScan(boost::shared_ptr<QByteArray>)));
-    myrobot->laser_slam->SetContiOutput(true);
+    connect(myekfslam->myrobot->laser_slam, SIGNAL(GetContiOneScan(boost::shared_ptr<QByteArray>)),
+           myekfslam->myrobot->laser_slam, SLOT(ShowScan(boost::shared_ptr<QByteArray>)));
+    myekfslam->myrobot->laser_slam->SetContiOutput(true);
 
-    myrobot->laser_slam->TriggerContinuousMode();
+    myekfslam->myrobot->laser_slam->TriggerContinuousMode();
 
 
     //    myrobot->laser_slam->TriggerOneScan();
@@ -673,10 +688,10 @@ void EIC_Test::on_pushButton_SLAM_clicked()
 
 void EIC_Test::on_pushButton_laser_slam_open_clicked()
 {
-    myrobot->laser_slam->Open(ui->comboBox_laser_slam_comport->currentText()
+    myekfslam->myrobot->laser_slam->Open(ui->comboBox_laser_slam_comport->currentText()
                    , ui->comboBox_laser_slam_baudrate->currentText().toInt()
                    , ui->comboBox_laser_slam_pre_baudrate->currentText().toInt());
-    if (myrobot->laser_slam->isOpen())
+    if (myekfslam->myrobot->laser_slam->isOpen())
     {
         ui->textBrowser->append(ui->comboBox_laser_slam_comport->currentText()
                                 + " preBaud: " + ui->comboBox_laser_slam_pre_baudrate->currentText()
@@ -693,7 +708,7 @@ void EIC_Test::on_pushButton_laser_slam_open_clicked()
 
 void EIC_Test::on_pushButton_SLAM_2_clicked()
 {
-    myrobot->laser_slam->StopContinuousMode();
+    myekfslam->myrobot->laser_slam->StopContinuousMode();
 }
 
 void EIC_Test::on_pushButton_11_clicked()
@@ -1116,23 +1131,23 @@ void EIC_Test::on_pushButton_15_clicked()
 
 void EIC_Test::on_pushButton_16_clicked()
 {
-    myrobot->offlineSLAM_filename = ui->lineEdit_SLAM_filename->text().toStdString();
-    myrobot->laser_slam->TriggerOneScan();
+    myekfslam->myrobot->offlineSLAM_filename = ui->lineEdit_SLAM_filename->text().toStdString();
+    myekfslam->myrobot->laser_slam->TriggerOneScan();
 }
 
 void EIC_Test::on_pushButton_18_clicked()
 {
     qRegisterMetaType<boost::shared_ptr<QByteArray>> ("boost::shared_ptr<QByteArray>");
-    connect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
-            myrobot, SLOT(SaveOfflineSLAMThread(boost::shared_ptr<QByteArray>)));
-    connect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
-           myrobot->laser_slam, SLOT(ShowScan(boost::shared_ptr<QByteArray>)));
+    connect(myekfslam->myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
+            myekfslam->myrobot, SLOT(SaveOfflineSLAMThread(boost::shared_ptr<QByteArray>)));
+    connect(myekfslam->myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
+           myekfslam->myrobot->laser_slam, SLOT(ShowScan(boost::shared_ptr<QByteArray>)));
     // debug message
-    connect(myrobot, SIGNAL(OfflineSLAM_ScanSize(int)),
+    connect(myekfslam->myrobot, SIGNAL(OfflineSLAM_ScanSize(int)),
             this, SLOT(Show_OfflineSLAM_ScanSize(int)));
     // odo
-    connect(myrobot, SIGNAL(EmitOdoMeter(Odotype, int)),
-            myrobot, SLOT(SaveOdoMeter(Odotype, int)));
+    connect(myekfslam->myrobot, SIGNAL(EmitOdoMeter(Odotype, int)),
+            myekfslam->myrobot, SLOT(SaveOdoMeter(Odotype, int)));
     // UI
     ui->pushButton_18->setVisible(false);
     ui->pushButton_19->setVisible(true);
@@ -1141,12 +1156,12 @@ void EIC_Test::on_pushButton_18_clicked()
 void EIC_Test::on_pushButton_19_clicked()
 {
     qRegisterMetaType<boost::shared_ptr<QByteArray>> ("boost::shared_ptr<QByteArray>");
-    disconnect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
-            myrobot, SLOT(SaveOfflineSLAMThread(boost::shared_ptr<QByteArray>)));
-    disconnect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
-           myrobot->laser_slam, SLOT(ShowScan(boost::shared_ptr<QByteArray>)));
-    disconnect(myrobot, SIGNAL(EmitOdoMeter(Odotype, int)),
-            myrobot, SLOT(SaveOdoMeter(Odotype, int)));
+    disconnect(myekfslam->myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
+            myekfslam->myrobot, SLOT(SaveOfflineSLAMThread(boost::shared_ptr<QByteArray>)));
+    disconnect(myekfslam->myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
+           myekfslam->myrobot->laser_slam, SLOT(ShowScan(boost::shared_ptr<QByteArray>)));
+    disconnect(myekfslam->myrobot, SIGNAL(EmitOdoMeter(Odotype, int)),
+            myekfslam->myrobot, SLOT(SaveOdoMeter(Odotype, int)));
     ui->pushButton_18->setVisible(true);
     ui->pushButton_19->setVisible(false);
 }
@@ -1154,7 +1169,7 @@ void EIC_Test::on_pushButton_19_clicked()
 void EIC_Test::on_pushButton_17_clicked()
 {
     const std::string filename = "./" + ui->lineEdit_SLAM_filename->text().toStdString() + ".txt";
-    myrobot->SaveOfflineSLAMFile(filename);
+    myekfslam->myrobot->SaveOfflineSLAMFile(filename);
 }
 
 void EIC_Test::on_pushButton_20_clicked()
@@ -1501,12 +1516,21 @@ void EIC_Test::on_pushButton_22_clicked()
 
 void EIC_Test::on_pushButton_SLAM_resetcount_clicked()
 {
-    myrobot->ResetCount();
+    myekfslam->myrobot->ResetCount();
 }
 
 void EIC_Test::on_pushButton_slam_EKFslam_clicked()
 {
+    myekfslam->myrobot->laser_slam->DisconnectReadyRead();
+    myekfslam->myrobot->right_dcmotor->SetHome();
+    myekfslam->myrobot->left_dcmotor->SetHome();
+    collector->SetMotorPointer(myekfslam->myrobot->right_dcmotor, myekfslam->myrobot->left_dcmotor);
+    collector->SetLaserPointer(myekfslam->myrobot->laser_slam);
+    connect(collector, SIGNAL(GetRightPoseSignal()), myekfslam->myrobot->right_dcmotor, SLOT(GetPose()));
+    connect(collector, SIGNAL(GetLeftPoseSignal()), myekfslam->myrobot->left_dcmotor, SLOT(GetPose()));
+    connect(collector, SIGNAL(TriggerLaserSignal()), myekfslam->myrobot->laser_slam, SLOT(TriggerLaser()));
     // shih's EKF slam
+    // EKFtimer flag
     checkBit = true;
     motionMode = false;
     sceneCnt = 0;
@@ -1514,13 +1538,13 @@ void EIC_Test::on_pushButton_slam_EKFslam_clicked()
     // number of scenes
     sceneNum = ui->spinBox_slam_sceneNum->value();
     gridDistance = abs(ui->spinBox_slam_x->value() - ui->spinBox_slam_x0->value())/(sceneNum - 1);
-    gridDistance = gridDistance*myrobot->gridMapper.GetPixel_meterFactor()*100;
+    gridDistance = gridDistance*myekfslam->gridMapper.GetPixel_meterFactor()*100;
     std::cout << "gridDistance:" << gridDistance << std::endl;
 
     // intial motor
-    myrobot->left_dcmotor->sethome();
-    myrobot->right_dcmotor->sethome();
-    myrobot->refenceMap.clear();
+    myekfslam->myrobot->left_dcmotor->SetHome();
+    myekfslam->myrobot->right_dcmotor->SetHome();
+    myekfslam->refenceMap.clear();
     // SLAM_Robot->lineExtracter.SetDistanceThreshold(20);
     vector<vector<Line> > lines;
 
@@ -1538,7 +1562,9 @@ void EIC_Test::on_pushButton_slam_EKFslam_clicked()
 //    connect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
 //            myrobot, SLOT(ProcessSingleTriggerSLAM(boost::shared_ptr<QByteArray>)));
 
+
     CornerExtraction cornerEx;
+    // repeat features
     for(int i = 0; i != 4; ++i)  // 6
     {
         vector<double> temp;
@@ -1546,31 +1572,37 @@ void EIC_Test::on_pushButton_slam_EKFslam_clicked()
         std::vector<Line> temp2;
         std::vector<Corner> cor;
         // triiger one scan
-        myrobot->laser_slam->DisconnectReadyRead();
-        myrobot->laser_slam->TriggerLaser();
-        while(myrobot->laser_slam->waitForReadyRead(400))
+
+        myekfslam->myrobot->laser_slam->TriggerLaser();
+        while(myekfslam->myrobot->laser_slam->waitForReadyRead(400))
         {
         }
 
-        myrobot->laser_slam->ReadData(temp);
-        std::cout << "temp size = " << temp.size() << std::endl;
+        myekfslam->myrobot->laser_slam->ReadData(temp);
+//        std::cout << "temp size = " << temp.size() << std::endl;
+//        for (int j = 0; j < temp.size(); j++)
+//        {
+//            std::cout << temp.at(j) << " ";
+//        }
+//        std::cout <<std::endl;
+
 //        SLAM_Robot->laserS200->ReadData(temp);
         if(temp.size()==0||i==0)
             continue;
-        myrobot->mapper.RangesDataToPointsData(temp, temp1);
+        myekfslam->mapper.RangesDataToPointsData(temp, temp1);
 
-        myrobot->lineExtracter.SplitAndMerge(temp1, temp2);
+        myekfslam->lineExtracter.SplitAndMerge(temp1, temp2);
         cornerEx.ExtractCorners(temp,cor);
 
         std::cout << "laser points:" << temp.size() << "  line num:" << temp2.size() << "  cor num:" << cor.size() << std::endl;
-        cv::Mat img = myrobot->mapper.GetLocalLandmarkMap(temp1,temp2,vector<Corner>());
+        cv::Mat img = myekfslam->mapper.GetLocalLandmarkMap(temp1,temp2,vector<Corner>());
 
-        cv::Mat img1 = myrobot->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),vector<Corner>());
-        cv::Mat img2 = myrobot->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),cor);
+        cv::Mat img1 = myekfslam->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),vector<Corner>());
+        cv::Mat img2 = myekfslam->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),cor);
 
 
         lines.push_back(temp2);
-        myrobot->gridMapper.InsertLocalGridMap(temp, cv::Point3d(0,0,0));
+        myekfslam->gridMapper.InsertLocalGridMap(temp, cv::Point3d(0,0,0));
 
         //////////////////////////////////////////////
         //save file
@@ -1579,7 +1611,7 @@ void EIC_Test::on_pushButton_slam_EKFslam_clicked()
         for(int i = 0; i != temp.size(); ++i)
             laserOutputFile << temp[i] << " ";
 
-        laserOutputFile << endl;//´«¦æ
+        laserOutputFile << endl;
 
 
         //////////////////////////////////////////////
@@ -1601,37 +1633,37 @@ void EIC_Test::on_pushButton_slam_EKFslam_clicked()
         }
     }
 
-    myrobot->EKFRuner.Initial(lines);
+    myekfslam->EKFRuner.Initial(lines);
     std::cout << "EKF Intial" <<endl;
-
-    myrobot->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
-    myrobot->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
-    myrobot->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+    myekfslam->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
+    myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+    myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
     //set start end points
-    myrobot->currentStart.x = myrobot->gridMapper.GetGridMapOriginalPoint().x;
-    myrobot->currentStart.y = myrobot->gridMapper.GetGridMapOriginalPoint().y;
+    myekfslam->currentStart.x = myekfslam->gridMapper.GetGridMapOriginalPoint().x;
+    myekfslam->currentStart.y = myekfslam->gridMapper.GetGridMapOriginalPoint().y;
 
-    myrobot->FinalEnd.x = myrobot->gridMapper.GetGridMapOriginalPoint().x + 200;
-    myrobot->FinalEnd.y = myrobot->gridMapper.GetGridMapOriginalPoint().y;
+    myekfslam->FinalEnd.x = myekfslam->gridMapper.GetGridMapOriginalPoint().x + 200;
+    myekfslam->FinalEnd.y = myekfslam->gridMapper.GetGridMapOriginalPoint().y;
 
 
-    myrobot->currentEnd.x = ui->spinBox_slam_x->value();
-    myrobot->currentEnd.y = ui->spinBox_slam_y->value();
+    myekfslam->currentEnd.x = ui->spinBox_slam_x->value();
+    myekfslam->currentEnd.y = ui->spinBox_slam_y->value();
 
     testEKFTimer->start(1500);
     readFlag = true;
     collector->start();
 
     cv::destroyAllWindows();
+
 }
 
 void EIC_Test::EKF_Timer()
 {
-    if(checkBit!=true)
+    if(checkBit != true)
     {
 
-        myrobot->right_dcmotor->Stop();
-        myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
         return;
 
     }
@@ -1661,18 +1693,18 @@ void EIC_Test::EKF_Timer()
 
     ////////////////////////////////////////////////////////////////////////
     //feature extraction
-    myrobot->mapper.RangesDataToPointsData(myrobot->rawLaserScanData,points);
-    myrobot->lineExtracter.SplitAndMerge(points,line);
+    myekfslam->mapper.RangesDataToPointsData(myekfslam->rawLaserScanData,points);
+    myekfslam->lineExtracter.SplitAndMerge(points,line);
 
     ////////////////////////////////////////////////////////////////////////
     //motion estimation
     //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
-    myrobot->EKFRuner.MotionPrediction(cv::Point2d(DeltaLeft,DeltaRight));
+    myekfslam->EKFRuner.MotionPrediction(cv::Point2d(DeltaLeft,DeltaRight));
 
     //SLAM_Robot->gridMapper.InsertLocalGridMap();
 
-    myrobot->EKFRuner.DataAssociation(line,cor);
-    myrobot->robotPosition=myrobot->EKFRuner.GetRobotPose();
+    myekfslam->EKFRuner.DataAssociation(line,cor);
+    myekfslam->robotPosition=myekfslam->EKFRuner.GetRobotPose();
 
 
 
@@ -1681,7 +1713,7 @@ void EIC_Test::EKF_Timer()
     ////////////////////////////////////////////////////////////////////////
     //ICP correction
     vector<cv::Point2d> temp;
-    dataConvertRobotToWorld(points,myrobot->robotPosition,temp);
+    dataConvertRobotToWorld(points,myekfslam->robotPosition,temp);
 
     double percent=0.5;
     //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
@@ -1694,18 +1726,18 @@ void EIC_Test::EKF_Timer()
 
     RobotState robotpath1;
 
-    robotpath1.robotPositionMean.ptr<double>(0)[0]=adjustPose.x+myrobot->robotPosition.robotPositionMean.ptr<double>(0)[0];
-    robotpath1.robotPositionMean.ptr<double>(1)[0]=adjustPose.y+myrobot->robotPosition.robotPositionMean.ptr<double>(1)[0];
-    robotpath1.robotPositionMean.ptr<double>(2)[0]=adjustPose.z+myrobot->robotPosition.robotPositionMean.ptr<double>(2)[0];
-    robotpath1.robotPositionCovariance=myrobot->robotPosition.robotPositionCovariance.clone();
+    robotpath1.robotPositionMean.ptr<double>(0)[0]=adjustPose.x+myekfslam->robotPosition.robotPositionMean.ptr<double>(0)[0];
+    robotpath1.robotPositionMean.ptr<double>(1)[0]=adjustPose.y+myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0];
+    robotpath1.robotPositionMean.ptr<double>(2)[0]=adjustPose.z+myekfslam->robotPosition.robotPositionMean.ptr<double>(2)[0];
+    robotpath1.robotPositionCovariance=myekfslam->robotPosition.robotPositionCovariance.clone();
 
     //xyz¹ê»Ú§ë¼v¦Ü¥­­±ªü
-    cv::Point2d imagePose=myrobot->gridMapper.GetRobotCenter(robotpath1);
+    cv::Point2d imagePose=myekfslam->gridMapper.GetRobotCenter(robotpath1);
 
-    myrobot->currentStart.x=imagePose.x;
-    myrobot->currentStart.y=imagePose.y;
+    myekfslam->currentStart.x=imagePose.x;
+    myekfslam->currentStart.y=imagePose.y;
 
-    myrobot->EKFRuner.SetRobotPose(robotpath1);
+    myekfslam->EKFRuner.SetRobotPose(robotpath1);
     ///////////////////////////////////// ///////////////////////////////////
 
     //add new map
@@ -1715,7 +1747,7 @@ void EIC_Test::EKF_Timer()
         double x=cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x-sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(0)[0];
         double y=sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x+cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(1)[0];
         //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
-        myrobot->refenceMap.push_back(cv::Point2d(x,y));
+        myekfslam->refenceMap.push_back(cv::Point2d(x,y));
         //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
 
     }
@@ -1723,12 +1755,12 @@ void EIC_Test::EKF_Timer()
     ////////////////////////////////////////////////////////////////////////
     //mapping process
 
-    myrobot->mapper.InsertLocalLandmarkMap(points,robotpath1);
-    landMarkImg = myrobot->mapper.GetLandmarkMap();
-    myrobot->gridMapper.InsertLocalGridMap(myrobot->rawLaserScanData,robotpath1);
-    myrobot->gridMapper.GetOccupancyGridMap(gridImg);
+    myekfslam->mapper.InsertLocalLandmarkMap(points,robotpath1);
+    landMarkImg = myekfslam->mapper.GetLandmarkMap();
+    myekfslam->gridMapper.InsertLocalGridMap(myekfslam->rawLaserScanData,robotpath1);
+    myekfslam->gridMapper.GetOccupancyGridMap(gridImg);
 
-    myrobot->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
+    myekfslam->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -1736,15 +1768,15 @@ void EIC_Test::EKF_Timer()
     cv::Point2d tempEnd;
     cv::Mat plannignGridMap;
     double search_rect=80;
-    myrobot->planner.SetGridMap(gridImg);
-    myrobot->planner.GetPathPlanningMap(plannignGridMap);
-    cv::circle(plannignGridMap,myrobot->currentStart, 2, cv::Scalar(255,255,255), -1 );
-    myrobot->FindCurrentNodeEnd(plannignGridMap,search_rect,myrobot->currentStart,myrobot->currentEnd,tempEnd);
+    myekfslam->planner.SetGridMap(gridImg);
+    myekfslam->planner.GetPathPlanningMap(plannignGridMap);
+    cv::circle(plannignGridMap,myekfslam->currentStart, 2, cv::Scalar(255,255,255), -1 );
+    myekfslam->FindCurrentNodeEnd(plannignGridMap,search_rect,myekfslam->currentStart,myekfslam->currentEnd,tempEnd);
 
 
-    double rsrart=sqrt(pow(myrobot->currentStart.x,2.0) +pow(myrobot->currentStart.y,2.0)  );
-    double rend=sqrt(pow(myrobot->currentEnd.x,2.0) +pow(myrobot->currentEnd.y,2.0)  );
-    double rFinal=sqrt(pow(myrobot->FinalEnd.x,2.0) +pow(myrobot->FinalEnd.y,2.0)  );
+    double rsrart=sqrt(pow(myekfslam->currentStart.x,2.0) +pow(myekfslam->currentStart.y,2.0)  );
+    double rend=sqrt(pow(myekfslam->currentEnd.x,2.0) +pow(myekfslam->currentEnd.y,2.0)  );
+    double rFinal=sqrt(pow(myekfslam->FinalEnd.x,2.0) +pow(myekfslam->FinalEnd.y,2.0)  );
     double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
 
     cv::Mat color_plannignGridMap;
@@ -1754,8 +1786,8 @@ void EIC_Test::EKF_Timer()
     //////////////////////////////////////////////
     //save file
     robotOutputFile<<DeltaRight<<" "<<DeltaLeft<<endl;
-    for(int i=0;i!=myrobot->rawLaserScanData.size();++i)
-        laserOutputFile<<myrobot->rawLaserScanData[i]<<" ";
+    for(int i=0;i!=myekfslam->rawLaserScanData.size();++i)
+        laserOutputFile<<myekfslam->rawLaserScanData[i]<<" ";
 
     laserOutputFile<<endl;//´«¦æ
 
@@ -1764,8 +1796,8 @@ void EIC_Test::EKF_Timer()
 
     if(sceneCnt==sceneNum)  //»`¶°¨ì³õ´º¼Æ
     {
-        myrobot->left_dcmotor->Stop();
-        myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
 
         collector->SetStopped(true);
         testEKFTimer->stop();
@@ -1782,8 +1814,8 @@ void EIC_Test::EKF_Timer()
 
         checkBit=false;
 
-        myrobot->left_dcmotor->Stop();
-        myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
 
         collector->SetStopped(true);
 
@@ -1802,16 +1834,16 @@ void EIC_Test::EKF_Timer()
 
     //if( (rend<=rsrart))  //¥b®|¤j©ó©Îµ¥©ó2*pixelFactor;
 
-    if( rsrart <= rTempEnd && threcont - ui->doubleSpinBox->value() >= myrobot->commandSets.size())
+    if( rsrart <= rTempEnd && threcont - ui->doubleSpinBox->value() >= myekfslam->commandSets.size())
     {
-        myrobot->commandSets = std::queue<std::pair<int,double>> ();
-        myrobot->planner.SetStartNode(myrobot->currentStart);
+        myekfslam->commandSets = std::queue<std::pair<int,double>> ();
+        myekfslam->planner.SetStartNode(myekfslam->currentStart);
 
         do
         {
 
-            myrobot->planner.SetEndNode(tempEnd);
-            myrobot->planner.AStartPlanning(myrobot->robotPathSets);
+            myekfslam->planner.SetEndNode(tempEnd);
+            myekfslam->planner.AStartPlanning(myekfslam->robotPathSets);
             //  QMessageBox::information(this, "Error!", "2_2!!"+QString::number(SLAM_Robot->robotPathSets.size()));
             //  cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
@@ -1823,12 +1855,12 @@ void EIC_Test::EKF_Timer()
             // QMessageBox::information(this, "Error!", "2_1_1");
 
 
-            if(myrobot->robotPathSets.size()!=0)
+            if(myekfslam->robotPathSets.size()!=0)
             {
-                myrobot->PathSmoothing();
+                myekfslam->PathSmoothing();
 
-                myrobot->TrajectoryGenerationSmoothing();
-                threcont=myrobot->commandSets.size();
+                myekfslam->TrajectoryGenerationSmoothing();
+                threcont=myekfslam->commandSets.size();
 
 
             }
@@ -1836,8 +1868,8 @@ void EIC_Test::EKF_Timer()
             {
 
 
-                tempEnd.x=myrobot->currentStart.x+10;
-                tempEnd.y=myrobot->currentStart.y;
+                tempEnd.x=myekfslam->currentStart.x+10;
+                tempEnd.y=myekfslam->currentStart.y;
 
 
             }
@@ -1849,7 +1881,7 @@ void EIC_Test::EKF_Timer()
             // QMessageBox::information(this, "Error!", "2_1_2");
 
 
-        }while(myrobot->robotPathSets.size()==0);
+        }while(myekfslam->robotPathSets.size()==0);
 
         this->SetMotionCommand();
 
@@ -1865,14 +1897,14 @@ void EIC_Test::EKF_Timer()
         }
 */
         ui->textBrowser->append("=====================");
-        ui->textBrowser->append("[robotPathSets size]:"+QString::number(myrobot->robotPathSets.size()));
-        for(int i=0;i!=myrobot->robotPathSets.size();++i)
+        ui->textBrowser->append("[robotPathSets size]:"+QString::number(myekfslam->robotPathSets.size()));
+        for(int i=0;i!=myekfslam->robotPathSets.size();++i)
         {
 
-            cv::circle(color_plannignGridMap, cv::Point(myrobot->robotPathSets[i].x,myrobot->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
+            cv::circle(color_plannignGridMap, cv::Point(myekfslam->robotPathSets[i].x,myekfslam->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
             ui->textBrowser->setFontWeight( QFont::DemiBold );
             ui->textBrowser->setTextColor( QColor( "red" ) );
-            ui->textBrowser->append("[robotPathSets]:"+QString::number(myrobot->robotPathSets[i].x)+" "+QString::number(myrobot->robotPathSets[i].y));
+            ui->textBrowser->append("[robotPathSets]:"+QString::number(myekfslam->robotPathSets[i].x)+" "+QString::number(myekfslam->robotPathSets[i].y));
 
         }
         ui->textBrowser->append("=====================");
@@ -1887,10 +1919,10 @@ void EIC_Test::EKF_Timer()
     // ui->textBrowser->append("=====no path fuck========");
 
 
-    cv::line( color_plannignGridMap, tempEnd, myrobot->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
+    cv::line( color_plannignGridMap, tempEnd, myekfslam->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
 
-    cv::circle(color_plannignGridMap, myrobot->currentStart, 4, cv::Scalar(0,255,0), 2  );
-    cv::circle(color_plannignGridMap, myrobot->currentEnd, 4, cv::Scalar(0,255,0), 2  );
+    cv::circle(color_plannignGridMap, myekfslam->currentStart, 4, cv::Scalar(0,255,0), 2  );
+    cv::circle(color_plannignGridMap, myekfslam->currentEnd, 4, cv::Scalar(0,255,0), 2  );
     cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
     clock_t endTime=clock();
@@ -1931,8 +1963,8 @@ void EIC_Test::singleSceneAcquisition()
     if(checkBit!=true)
     {
 
-        myrobot->right_dcmotor->Stop();
-        myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
 
 
     }
@@ -2351,57 +2383,57 @@ void EIC_Test::singleSceneAcquisition()
 void EIC_Test::SetMotionCommand()
 {
     double value = 0;
-    int velocity = myrobot->GetVelocity();
+    int velocity = myekfslam->GetVelocity();
     //RightMotor,LeftMotor);
 
     if(checkBit != true)
     {
 
-        myrobot->right_dcmotor->Stop();
-        myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
         return;
 
     }
 
 
-    if(!myrobot->commandSets.empty())
+    if(!myekfslam->commandSets.empty())
     {
         collector->SetCommandFlag(true);
        // cout<<"!!"<<commandSets.front().second<<endl;
-        if(myrobot->commandSets.front().first==1)
+        if(myekfslam->commandSets.front().first==1)
         {
 
             //SLAM_Robot->rightMotor->SetVelocity(0);
             //SLAM_Robot->leftMotor->SetVelocity(0);
           //  commandSets.front().second
             //[encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:325]
-             value=(4096*3.333*14)*(myrobot->commandSets.front().second/32.5)/(CV_PI);
+             value=(4096*3.333*14)*(myekfslam->commandSets.front().second/32.5)/(CV_PI);
             cout<<"forward: "<<value<<endl;
-            myrobot->left_dcmotor->SetVelocity(velocity);
-            myrobot->right_dcmotor->SetVelocity(-velocity);
+            myekfslam->myrobot->left_dcmotor->SetVelocity(velocity);
+            myekfslam->myrobot->right_dcmotor->SetVelocity(-velocity);
 
 
 
         }
         else
         {
-            double arc=2*CV_PI*myrobot->GetRobotWidth()*(myrobot->commandSets.front().second/360.0);
+            double arc=2*CV_PI*myekfslam->GetRobotWidth()*(myekfslam->commandSets.front().second/360.0);
              //double arc=2*CV_PI*SLAM_Robot->GetRobotWidth()*((SLAM_Robot->commandSets.front().second*30.0/45.0)/360.0);
             // cout<<angle<<endl;
             value=(4096*3.333*14)*(arc/32.5)/(CV_PI);
 
-            if(myrobot->commandSets.front().first==2) //right
+            if(myekfslam->commandSets.front().first==2) //right
             {
                 //SLAM_Robot->rightMotor->SetVelocity(-velocity);
-                myrobot->right_dcmotor->SetVelocity(-30);
-                myrobot->left_dcmotor->SetVelocity(0);
+                myekfslam->myrobot->right_dcmotor->SetVelocity(-30);
+                myekfslam->myrobot->left_dcmotor->SetVelocity(0);
 
             }
-            else if(myrobot->commandSets.front().first==3) //left
+            else if(myekfslam->commandSets.front().first==3) //left
             {
-                myrobot->right_dcmotor->SetVelocity(0);
+                myekfslam->myrobot->right_dcmotor->SetVelocity(0);
                 //SLAM_Robot->leftMotor->SetVelocity(velocity);
-                myrobot->left_dcmotor->SetVelocity(30);
+                myekfslam->myrobot->left_dcmotor->SetVelocity(30);
 
             }
             value=abs(value); //test
@@ -2410,19 +2442,97 @@ void EIC_Test::SetMotionCommand()
         }
         ui->textBrowser_slam_2->setFontWeight( QFont::DemiBold );
         ui->textBrowser_slam_2->setTextColor( QColor( "red" ) );
-        ui->textBrowser_slam_2->append("mode:"+QString::number(myrobot->commandSets.front().first)+ " value:"+QString::number(myrobot->commandSets.front().second));
+        ui->textBrowser_slam_2->append("mode:"+QString::number(myekfslam->commandSets.front().first)+ " value:"+QString::number(myekfslam->commandSets.front().second));
 
 
-        myrobot->commandSets.front().second=value;
-        collector->SetMotionCommand(myrobot->commandSets.front().first,myrobot->commandSets.front().second);
-        myrobot->commandSets.pop();
+        myekfslam->commandSets.front().second=value;
+        collector->SetMotionCommand(myekfslam->commandSets.front().first,myekfslam->commandSets.front().second);
+        myekfslam->commandSets.pop();
 
     }
     else
     {
         collector->SetCommandFlag(false);
-        myrobot->right_dcmotor->Stop();
-        myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
+        myekfslam->myrobot->left_dcmotor->Stop();
     }
 
+}
+
+void EIC_Test::setOdometryLaserData(const int right, const int left, const std::vector<double> &data)
+{
+    /*
+    clock_t startTime=clock();
+
+    SLAM_Robot->rawLaserScanData=data;
+
+    if(readFlag==true)
+    {
+
+        odoValueCurrent.x=-right;  //�ƭȬ��t��
+        odoValueCurrent.y=left;
+
+        //[encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:32.5]
+
+        //cout<<DeltaRight<<" "<<DeltaLeft<<" "<<data.size()<<endl;
+
+        clock_t endTime=clock();
+        double total=(double)(endTime-startTime)/CLK_TCK;
+
+        cout<<"2:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<total<<endl;
+        readFlag=false;
+
+
+    }
+
+
+    */
+
+    clock_t startTime=clock();
+
+    myekfslam->rawLaserScanData=data;
+
+    //  if(readFlag==true)
+    //{
+
+
+    odoValueCurrent.x=-right;  //�ƭȬ��t��
+    odoValueCurrent.y=left;
+
+    //[encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:32.5]
+
+    //cout<<DeltaRight<<" "<<DeltaLeft<<" "<<data.size()<<endl;
+
+    clock_t endTime=clock();
+    double total=(double)(endTime-startTime)/CLK_TCK;
+
+    cout<<"2:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<total<<endl;
+    readFlag=false;
+
+
+    //  }
+}
+
+void EIC_Test::on_pushButton_23_clicked()
+{
+//    connect(this, SIGNAL(TestFor(double, double)), myekfslam->myrobot, SLOT(GoForward(double,double)));
+//    connect(myekfslam->EKFTimer, SIGNAL(timeout()), myekfslam, SLOT(EKFStepExamine()));
+//    connect(myekfslam, SIGNAL(MotorStop()), myekfslam->myrobot, SLOT(MotorStop()));
+//    myekfslam->myrobot->right_dcmotor->Disconnect();
+//    myekfslam->myrobot->left_dcmotor->Disconnect();
+    // turn off all answers, except for position response
+//    myekfslam->myrobot->left_dcmotor->SetANSWmode(0);
+//    myekfslam->myrobot->left_dcmotor->SetHome();
+////    myekfslam->myrobot->right_dcmotor->SetANSWmode(2);
+////    myekfslam->myrobot->left_dcmotor->SetNPmode();
+////    myekfslam->myrobot->right_dcmotor->SetNPmode();
+//    myekfslam->Connect();
+////    myekfslam->myrobot->GoForward(0.1, 400);
+//    emit TestFor(0.1, 400);
+//    myekfslam->EKFTimer->start(1000);
+
+    myekfslam->Initial(ui->spinBox_slam_sceneNum->value(),
+                       ui->spinBox_slam_x0->value(),
+                       ui->spinBox_slam_x->value(),
+                       ui->spinBox_slam_y->value());
 }

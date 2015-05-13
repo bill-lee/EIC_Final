@@ -42,7 +42,7 @@ class MyRobot : public QObject
 {
     Q_OBJECT
 public:
-    MyRobot(double w = 58, int velocity = 30, const cv::Point2d& point=cv::Point2d (150,500));
+    MyRobot();
     ~MyRobot();
     // trigger data acquisition
     // start_angle in degree
@@ -58,7 +58,7 @@ public:
 
     void StopDataAcquisitionConti();
 
-    void GoForward(double distance_m, double speed);
+
 
     void GoBackward(double distance_m, double speed);
 
@@ -96,44 +96,20 @@ public:
 
     void ResetCount() {odo_cmd_count = 0; offlineSLAM_count = 0;}
 
-    // shih's
-    OccupancyGridMapping gridMapper;
-    LandmarkMapping mapper;
-        EKF_SLAM EKFRuner;
-    LineExtraction lineExtracter;
-    CornerExtraction cornerExtractor;
-    PathPlanning planner;
-    // mytoolkit
-    RobotState robotPosition;
-    // data member
-    std::vector<double> rawLaserScanData;
-    cv::Point2d currentStart;
-    cv::Point2d currentEnd;
-    cv::Point2d FinalEnd;
-    std::queue<std::pair<int,double> > commandSets;
-    std::vector<cv::Point2d> robotPathSets;
-    std::vector<cv::Point2d> robotPathSetsSmoothing;
-//    cv::Point3d robotPose;
-    /*----------------------------------------------------------------------------------------------*/
-    //laser and camera parameters
-    cv::Mat cameraIntrinsicMatrix;
-    cv::Mat distortionCoefficients;
-    cv::Mat laser_cameraRotationMatrix;
-    cv::Mat laser_cameraTranslationMatrix;
-    cv::Mat laser_cameraHomogeneous;
 
-    /*----------------------------------------------------------------------------------------------*/
-    //ICP
-    vector<cv::Point2d> refenceMap;
 
     // function
-    void FindCurrentNodeEnd(const cv::Mat &gridMap,double intervalDistance, const cv::Point2d &currentStart,const cv::Point2d &goal ,cv::Point2d& currentEnd);
-    void PathSmoothing();
-    void TrajectoryGenerationSmoothing();
-    inline int GetVelocity(){return robotVelocity; }
-    inline int GetRobotWidth(){ return robotWidth;}
 
 
+
+
+
+public slots:
+    void GoForwardThread(double distance_m, double speed);
+
+    void GoForward(double distance_m, double speed);
+
+    void MotorStop();
 private slots:
 
 
@@ -266,10 +242,10 @@ private:
 
     std::size_t odo_cmd_count;
 
-    // shih's
-    int robotVelocity;
-    double robotWidth;  //cm
-    cv::Point2d robotMapOrginal;
+    cv::Mat cameraIntrinsicMatrix;
+    cv::Mat distortionCoefficients;
+
+
 
 
 };

@@ -35,11 +35,11 @@ void OccupancyGridMapping::GetLocalGridMap(const std::vector<double> &laserRange
 
 }
 
-void OccupancyGridMapping::InvLaserModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D,cv::Mat& gridMap,bool isGlobal)
+void OccupancyGridMapping::InvLaserModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d& robotPose2D, cv::Mat& gridMap, bool isGlobal)
 {
-    //z:laserBeamRange(unit:cm)   follow robot pose to fill the value
-    double lo=0;
-    double lfree=-5 ;
+    // z: laserBeamRange(unit:cm)   follow robot pose to fill the value
+    double lo = 0;
+    double lfree = -5 ;
     double locc=5;
 
     cv::Point2d originalPoint(gridMap.cols/2,gridMap.rows/2);
@@ -92,20 +92,26 @@ void OccupancyGridMapping::_LogToBel(const cv::Mat &localMap,cv::Mat& gridMap8U)
 
 void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRangeData, const cv::Point3d &robotPose2D)
 {
-    double resolution =aperture/(laserRangeData.size()-1);
+    double resolution = aperture/(laserRangeData.size()-1);
 
-    for(int i=10;i!=laserRangeData.size();++i)
+//    std::cout << "aperture = " << aperture << std::endl;
+//    std::cout << "resolution = " << resolution << std::endl;
+//    std::cout << "laserRangeData.size() = " << laserRangeData.size() << std::endl;
+
+    for(int i = 10; i != laserRangeData.size(); ++i)
     {
 
-        if((laserRangeData[i]>=MAX_RANGE||laserRangeData[i]<=10)&&(i<(laserRangeData.size()*0.5-5)&&i>(laserRangeData.size()*0.5+5)))
+        if((laserRangeData[i] >= MAX_RANGE|| laserRangeData[i] <= 10)
+                && (i < (laserRangeData.size()*0.5 - 5)
+                   && i > (laserRangeData.size()*0.5 + 5)))
             continue;
 
-        double angle=(i*resolution)-aperture/2;
+        double angle = (i*resolution) - aperture/2;
 
-        if(laserRangeData[i]<2000)
-            InvLaserModel(laserRangeData[i],angle,robotPose2D,girdMap);
+        if(laserRangeData[i] < 2000)
+            InvLaserModel(laserRangeData[i], angle, robotPose2D, girdMap);
         else
-            InvLaserAvoidMaxDistModel(laserRangeData[i],angle,robotPose2D,girdMap);
+            InvLaserAvoidMaxDistModel(laserRangeData[i], angle, robotPose2D, girdMap);
 
 
     }
@@ -114,7 +120,8 @@ void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRa
 }
 void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRangeData, const RobotState& robot)
 {
-    double resolution =aperture/(laserRangeData.size()-1);
+    double resolution = aperture/(laserRangeData.size()-1);
+
     cv::Point3d robotPose2D;
     robotPose2D.x=robot.robotPositionMean.ptr<double>(0)[0];
     robotPose2D.y=robot.robotPositionMean.ptr<double>(1)[0];
@@ -124,9 +131,11 @@ void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRa
     for(int i=10;i!=laserRangeData.size();++i)
     {
 
-        if((laserRangeData[i]>=MAX_RANGE||laserRangeData[i]<=10)&&(i<(laserRangeData.size()*0.5-5)&&i>(laserRangeData.size()*0.5+5)))
+        if((laserRangeData[i] >= MAX_RANGE||laserRangeData[i] <= 10)
+                && (i < (laserRangeData.size()*0.5 - 5)
+                    && i > (laserRangeData.size()*0.5 + 5)))
             continue;
-        double angle=(i*resolution)-aperture/2;
+        double angle = (i*resolution) - aperture/2;
 
         if(laserRangeData[i]<2000)
             InvLaserModel(laserRangeData[i],angle,robotPose2D,girdMap);
@@ -167,11 +176,11 @@ cv::Point2d OccupancyGridMapping::GetRobotCenter(const RobotState& pose)
 void OccupancyGridMapping::InvLaserAvoidMaxDistModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D, cv::Mat &gridMap, bool isGlobal)
 {
 
-       double lo=0;
-       double lfree=-5 ;
-       double locc=5;
+       double lo = 0;
+       double lfree = -5 ;
+       double locc = 5;
 
-       double validRange=laserBeamRange*0.3;
+       double validRange = laserBeamRange*0.3;
        cv::Point2d originalPoint(gridMap.cols/2,gridMap.rows/2);
 
        if(isGlobal){ originalPoint.x=gridMap_originalPoint.x; originalPoint.y=gridMap_originalPoint.y; }

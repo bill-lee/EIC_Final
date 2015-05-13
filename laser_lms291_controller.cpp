@@ -123,6 +123,7 @@ int Laser_LMS291_Controller::TriggerLaser()
     //
     char LMS291cmd[8] = {0x02, 0x00, 0x02, 0x00, 0x30, 0x01, 0x31, 0x18};
     this->write(LMS291cmd, 8);
+
 //    emit TriggerLaser();
     return RS_ok;
 }
@@ -558,7 +559,6 @@ bool Laser_LMS291_Controller::ReadData(std::vector<double> &scanData)
     bool state = false;
     scanData.clear();
 
-
     int num = this->bytesAvailable();
 
     if(num > 0 && num < 1024)
@@ -567,19 +567,9 @@ bool Laser_LMS291_Controller::ReadData(std::vector<double> &scanData)
 
         if( temp.size() == 733 ){
 
-            std::vector<unsigned char> data;
-            for(int i = 9; i <= 730; i++)
+            for (int j = 8; j < temp.size() - 4; j += 2)
             {
-                unsigned char tp = temp[i];
-                data.push_back(tp);
-
-            }
-
-            for(int j = 0; j < data.size() - 1; j += 2)
-            {
-//                double r = (datatemp.at(i) & 0xff) | ((datatemp.at(i + 1) & 0x1f) << 8);
-                double r = data[j+1] * 256 + data[j];
-                scanData.push_back(r);
+                scanData.push_back(uint16_t((temp.at(j) & 0xff) | ((temp.at(j + 1) & 0x1f) << 8)));
             }
 
             state==true;
@@ -589,6 +579,25 @@ bool Laser_LMS291_Controller::ReadData(std::vector<double> &scanData)
     }
 
     return state;
+}
+
+void Laser_LMS291_Controller::GetOneLaserData(std::vector<double> &data)
+{
+    this->TriggerLaser();
+    while(this->waitForReadyRead(400))
+    {
+    }
+    int N = this->bytesAvailable();
+    if (N == 733)
+    {
+        QByteArray temp = this->read(N);
+
+        for (int j = 8; j < temp.size() - 4; j += 2)
+        {
+            data.push_back(uint16_t((temp.at(j) & 0xff) | ((temp.at(j + 1) & 0x1f) << 8)));
+        }
+    }
+
 }
 
 void Laser_LMS291_Controller::showReadyRead()
@@ -625,7 +634,7 @@ void Laser_LMS291_Controller::StartOneScan()
     //    myrobot->laser_lms291->TriggerContinuousMode();
 }
 
-void Laser_LMS291_Controller:: ReceiveDataThread()
+void Laser_LMS291_Controller::ReceiveDataThread()
 {
     QFuture<bool> future = QtConcurrent::run(this, &Laser_LMS291_Controller::ReceiveData);
     future.waitForFinished();

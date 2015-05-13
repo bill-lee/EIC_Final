@@ -4,7 +4,8 @@
 #include <QMainWindow>
 #include "stepmotor_controller.h"     // lab405 step motor controller
 #include "laser_lms291_controller.h"
-#include "myrobot.h"
+#include "myefkslam.h"
+//#include "myrobot.h"
 #include <QTimer>
 #include <QMessageBox>
 #include "sensorsetup.h"                // sensor UI, class SensorSetup
@@ -23,7 +24,6 @@
 //#include "shih_slam/ekf_slam.h"
 //#include "shih_slam/pathplanning.h"
 //#include "shih_slam/shih_myrobot.h"
-#include "shih_slam/shih_myrobot.h"
 #include "shih_slam/datagrabthread.h"
 
 namespace Ui {
@@ -169,10 +169,14 @@ private slots:
     void EKF_Timer();
     void singleSceneAcquisition();
     void SetMotionCommand();
+    void setOdometryLaserData(const int right, const int left, const std::vector<double> &data);
+
+    void on_pushButton_23_clicked();
 
 private:
     Ui::EIC_Test *ui;
-    lab405::MyRobot *myrobot;
+    lab405::MyEFKSLAM *myekfslam;
+//    lab405::MyRobot *myekfslam->myrobot;
 
     // additional setup UI
     SensorSetup *sensorsetup;
@@ -209,8 +213,13 @@ private:
     int threcont;
     bool paused;    // for detect people
 
+    QThread *Robot_Thread;
+
+
 signals:
     void test();
+
+    void TestFor(double,double);
 //    StepMotor_Controller *step_motor;
 //    Laser_LMS291_Controller *laser291;
 };

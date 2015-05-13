@@ -29,6 +29,9 @@ signals:
     void sendOdemtrydData(const int right,const int left);
     void sendOdemtryLaserData(const int right,const int left,const std::vector<double>& data);
     void sendCommandAccomplishment();
+    void GetRightPoseSignal();
+    void GetLeftPoseSignal();
+    void TriggerLaserSignal();
 
 public slots:
 
@@ -48,7 +51,6 @@ private:
     double leftCommand;
     int motionType;  //1: forward 2:right 3:left
     bool commandFlag;
-
 
 
 

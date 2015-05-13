@@ -99,7 +99,7 @@ public:
 
     void ReceiveContinuousData(const uint8_t *commheader, const uint8_t *dataheader, uint64_t data_len);
 
-    int TriggerLaser();
+
 
     void testReceiveContinuousData();
 
@@ -114,6 +114,10 @@ public:
     static bool CheckHeader();
 
     bool ReadData(std::vector<double> &scanData);
+
+    // slam
+    // trigger and save
+    void GetOneLaserData(std::vector<double> &data);
 
 signals:
 
@@ -142,6 +146,7 @@ public slots:
     void CheckCommBaud();
 
 
+    int TriggerLaser();
 
     void TriggerOneScan();
 

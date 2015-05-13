@@ -4,10 +4,10 @@
 #include <iostream>
 #include "opencv2/opencv.hpp"
 #include "mytoolkit.h"
-#include <pcl/io/pcd_io.h>  //Åª¨ú©Î¿é¥XÂI¶³ÀÉ®×ªºclass
-#include <pcl/point_types.h>  //pclªº¸ê®Æ«¬ºA
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
 #include <pcl/point_representation.h>
-#include <pcl/visualization/cloud_viewer.h>  //simple viwer
+#include <pcl/visualization/cloud_viewer.h>
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
@@ -20,16 +20,16 @@ public:
     ///////////////////////////////////////////////////////////////////////////////////
     // constructor
     ///////////////////////////////////////////////////////////////////////////////////
-    OccupancyGridMapping(const int rows=800,const int cols=800,const int obstacle_width=1,const  int laserBeam_width=1,double z=2500,double a=CV_PI*(3.0/2.0),double m=0.25)
-        : girdMap_rows(rows),girdMap_cols(cols),alpha(obstacle_width),beta(laserBeam_width),maxZ(z),aperture(a),pixel_meterFactor(m)
+    OccupancyGridMapping(const int rows = 800, const int cols = 800, const int obstacle_width = 1, const int laserBeam_width = 1, double z = 2500, double a = CV_PI, double m = 0.25)
+        : girdMap_rows(rows), girdMap_cols(cols), alpha(obstacle_width), beta(laserBeam_width), maxZ(z), aperture(a), pixel_meterFactor(m)
     {
         gridMap_originalPoint =cv::Point2d(150,500);  //unit:m
 
-        girdMap=cv::Mat(girdMap_rows,girdMap_cols,CV_64F); //ªì©l¤Ægridmap¤j¤p ¥B³]©w¬°³æ³q¹DCV_64F
+        girdMap=cv::Mat(girdMap_rows,girdMap_cols,CV_64F); // initialize size of gridmap, and set to CV_64F
 
-    } //unit:¤½¤Ø(m)
+    } //unit: meter(m)
 
-    void InitGridMap(const double lo=0){ girdMap=cv::Scalar::all(lo);}//lo¬°ªì©l¤Æªº¼Æ­È0~1
+    void InitGridMap(const double lo=0){ girdMap=cv::Scalar::all(lo);} // lo: intial value, 0~1
     void GetLocalGridMap(const std::vector<double>& laserRangeData,cv::Mat& localMap);
     void InvLaserModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D,cv::Mat& gridMap,bool isGlobal=true);
     void InvLaserAvoidMaxDistModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D,cv::Mat& gridMap,bool isGlobal=true);
@@ -47,14 +47,14 @@ public:
 private:
 
     cv::Mat girdMap;
-    int girdMap_rows;//unit:¤½¤Ø(m)*pixel_meterFactor
-    int girdMap_cols;//unit:¤½¤Ø(m)*pixel_meterFactor
-    int alpha;  //obstacle width  unit:(cm)
-    int beta;  //laser beam width unit:(cm)
-    double maxZ;  //¹p®g³Ì¤jªº¶q´ú
-    double aperture; //unit:rad ¹p®gªº±½´y¨¤«×
-    double pixel_meterFactor;  //¤@­Ópixel¥Nªí´X¤½¤Ø
-    cv::Point2d gridMap_originalPoint; //grid map­ìÂI
+    int girdMap_rows;//unit: meter(m)*pixel_meterFactor
+    int girdMap_cols;//unit: meter(m)*pixel_meterFactor
+    int alpha;  // obstacle width  unit:(cm)
+    int beta;  // laser beam width unit:(cm)
+    const double maxZ;  // Laser Max Range
+    const double aperture; // unit: rad, the FOV of Laser
+    double pixel_meterFactor;  // meters per pixel
+    cv::Point2d gridMap_originalPoint; // origin of grid map­
 
     void _LogToBel(const cv::Mat &localMap,cv::Mat& gridMap8U);
 
@@ -64,7 +64,7 @@ private:
 template<class PointT>
 void OccupancyGridMapping::InsertPointCloudGridMap(const pcl::PointCloud<PointT> &input,const cv::Point3d &robotPose2D,double upperbound=0,double lowerbound=-80)
 {
-//robotPose2D ¬O§_­­¨î  -CV_PI~CV_PI
+//robotPose2D is wheter constrained to -CV_PI~CV_PI
 
 
     for(int i=0;i!=input.points.size();++i)
