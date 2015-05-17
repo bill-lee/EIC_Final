@@ -93,81 +93,101 @@ void EKF_SLAM::Initial(const std::vector<std::vector<Line> >& lineFeature)
 
 }
 
+// Prediction(DeltaR, DeltaL)
 void EKF_SLAM::MotionPrediction(const cv::Point2d& odometryValue) //[x=right y=left]
 {
-
-
     ////////////////////////////////////////////////////////////////////////////////
-    double x=robotState.robotPositionMean.ptr<double>(0)[0];
-    double y=robotState.robotPositionMean.ptr<double>(1)[0];
+    double x = robotState.robotPositionMean.ptr<double>(0)[0];
+    double y = robotState.robotPositionMean.ptr<double>(1)[0];
     double phi=robotState.robotPositionMean.ptr<double>(2)[0];  //rad
-    double right=odometryValue.x;
-    double left=odometryValue.y;
-    cv::Mat Fx=cv::Mat::eye(STATE_SIZE,STATE_SIZE+OBS_SIZE*landmarkNum,CV_64F);  //3*(3+3*N)
+
+    // DeltaR, DeltaL
+    double DeltaR = odometryValue.x;
+    double DeltaL = odometryValue.y;
+    // DeltaC = (DeltaR + DeltaL)/2, the trajectory of center of mass
+    double DeltaC = (DeltaR + DeltaL)/2.0;
+    double DeltaTheta = (DeltaR - DeltaL)/robotWidth;
+
+    cv::Mat Fx = cv::Mat::eye(STATE_SIZE, STATE_SIZE + OBS_SIZE*landmarkNum, CV_64F);  //3*(3+3*N)
 
 
     ////////////////////////////////////////////////////////////////////////////////
     //------帶入推導的機器人motion model的mean值  Ut=f(command,Ut-1)-------------------------------------------------------
-    double tempX=(right+left)/2.0*cos(phi+(right-left)*deltaT/(2*robotWidth));
-    double tempY=(right+left)/2.0*sin(phi+(right-left)*deltaT/(2*robotWidth));
-    double tempThtea=((right-left)/robotWidth)*deltaT;
+    // bring means into motion model, Ut=f(command, Ut-1)
 
-    //robot state
-    robotState.robotPositionMean.ptr<double>(0)[0]+=tempX;
-    robotState.robotPositionMean.ptr<double>(1)[0]+=tempY;
-    robotState.robotPositionMean.ptr<double>(2)[0]+=tempThtea;
-    //y vector
-    robotCombinedState.ptr<double>(0)[0]+=tempX;
-    robotCombinedState.ptr<double>(1)[0]+=tempY;
-    robotCombinedState.ptr<double>(2)[0]+=tempThtea;
+    //*** deltaT?
+    // X' = X + DeltaC*cos(theta + delta_theta/2)
+    // Y' = Y + DeltaC*cos(theta + delta_theta/2)
+    // theta' = theta + delta_theta;
+    // which delta_theta = (DeltaR - DeltaL)/b
+    double tempX = DeltaC*cos(phi + DeltaTheta/2.0*deltaT);
+    double tempY = DeltaC*sin(phi + DeltaTheta/2.0*deltaT);
+    double tempTheta = DeltaTheta*deltaT;
 
-    //normalize
-    while(robotState.robotPositionMean.ptr<double>(2)[0]> CV_PI)
+    // take displacement into current robot state
+    robotState.robotPositionMean.ptr<double>(0)[0] += tempX;
+    robotState.robotPositionMean.ptr<double>(1)[0] += tempY;
+    robotState.robotPositionMean.ptr<double>(2)[0] += tempTheta;
+
+    //***y vector ??
+    robotCombinedState.ptr<double>(0)[0] += tempX;
+    robotCombinedState.ptr<double>(1)[0] += tempY;
+    robotCombinedState.ptr<double>(2)[0] += tempTheta;
+
+    // angle normalize
+    while(robotState.robotPositionMean.ptr<double>(2)[0] > CV_PI)
     {
         robotState.robotPositionMean.ptr<double>(2)[0] -= 2*CV_PI;
-        robotCombinedState.ptr<double>(2)[0]-= 2*CV_PI;
+        robotCombinedState.ptr<double>(2)[0] -= 2*CV_PI;
     }
-    while(robotState.robotPositionMean.ptr<double>(2)[0]< -CV_PI)
+    while(robotState.robotPositionMean.ptr<double>(2)[0] < -CV_PI)
     {
         robotState.robotPositionMean.ptr<double>(2)[0] += 2*CV_PI;
-        robotCombinedState.ptr<double>(2)[0]+= 2*CV_PI;
+        robotCombinedState.ptr<double>(2)[0] += 2*CV_PI;
     }
 
 
     ////////////////////////////////////////////////////////////////////////////////
     //------帶入推導的機器人motion model的covariance  -------------------------------------------------------
     //(a):當motion model改變時 motion model Jacobians要改這邊
-    cv::Mat Gt=cv::Mat::eye(STATE_SIZE+OBS_SIZE*landmarkNum,STATE_SIZE+OBS_SIZE*landmarkNum ,CV_64F);
-    Gt.ptr<double>(0)[2]=-(right+left)/2.0*sin(phi+(right-left)*deltaT/(2.0*robotWidth));
-    Gt.ptr<double>(1)[2]=(right+left)/2.0*cos(phi+(right-left)*deltaT/(2.0*robotWidth));
+
+
+    // (a): Jacobians
+    // Fp, Jacobain of robot state (p), derivative of p' with respect (x, y, theta)
+    cv::Mat Gt = cv::Mat::eye(STATE_SIZE + OBS_SIZE*landmarkNum, STATE_SIZE + OBS_SIZE*landmarkNum, CV_64F);
+    Gt.ptr<double>(0)[2] = -DeltaC*sin(phi + DeltaTheta/2.0*deltaT);
+    Gt.ptr<double>(1)[2] = DeltaC*cos(phi + DeltaTheta/2.0*deltaT);
 
 
 
+    // (b): motion
     //(b):當motion model改變時 motion error model Jacobians要改這邊
-    cv::Mat motionErrorJacobian=cv::Mat::zeros(STATE_SIZE,MOT_SIZE,CV_64F);
-    cv::Mat R=cv::Mat::zeros(STATE_SIZE,STATE_SIZE,CV_64F);
-    motionErrorJacobian.ptr<double>(0)[0]=0.5*cos(phi+(right-left)*deltaT/(2*robotWidth))-(right+left)*deltaT/(4*robotWidth)*sin(phi+(right-left)*deltaT/(2*robotWidth));
-    motionErrorJacobian.ptr<double>(0)[1]=0.5*cos(phi+(right-left)*deltaT/(2*robotWidth))+(right+left)*deltaT/(4*robotWidth)*sin(phi+(right-left)*deltaT/(2*robotWidth));
-    motionErrorJacobian.ptr<double>(1)[0]=0.5*sin(phi+(right-left)*deltaT/(2*robotWidth))+(right+left)*deltaT/(4*robotWidth)*cos(phi+(right-left)*deltaT/(2*robotWidth));
-    motionErrorJacobian.ptr<double>(1)[1]=0.5*sin(phi+(right-left)*deltaT/(2*robotWidth))-(right+left)*deltaT/(4*robotWidth)*cos(phi+(right-left)*deltaT/(2*robotWidth));
-    motionErrorJacobian.ptr<double>(2)[0]=deltaT/robotWidth;
-    motionErrorJacobian.ptr<double>(2)[1]=-deltaT/robotWidth;
-    //(c) motion noise
-    cv::Mat motionError=cv::Mat::eye(MOT_SIZE,MOT_SIZE,CV_64F);
-    motionError.ptr<double>(0)[0]=3.5*odometryValue.x;         //Sr^2     5
-    motionError.ptr<double>(0)[1]=0.0;                          //SrSl
-    motionError.ptr<double>(1)[0]=0.0;                          //SlSr
-    motionError.ptr<double>(1)[1]=3.5*odometryValue.y;         //Sl^2     5
+    cv::Mat motionErrorJacobian = cv::Mat::zeros(STATE_SIZE, MOT_SIZE, CV_64F);
+    cv::Mat R = cv::Mat::zeros(STATE_SIZE, STATE_SIZE, CV_64F);
+    motionErrorJacobian.ptr<double>(0)[0] = 0.5*cos(phi + DeltaTheta/2.0*deltaT) - DeltaC/(2.0*robotWidth)*deltaT*sin(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(0)[1] = 0.5*cos(phi + DeltaTheta/2.0*deltaT) + DeltaC/(2.0*robotWidth)*deltaT*sin(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(1)[0] = 0.5*sin(phi + DeltaTheta/2.0*deltaT) + DeltaC/(2.0*robotWidth)*deltaT*cos(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(1)[1] = 0.5*sin(phi + DeltaTheta/2.0*deltaT) - DeltaC/(2.0*robotWidth)*deltaT*cos(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(2)[0] = deltaT/robotWidth;
+    motionErrorJacobian.ptr<double>(2)[1] = -deltaT/robotWidth;
 
-    R=motionErrorJacobian*motionError*motionErrorJacobian.t();
+    // (c) motion noise
+    cv::Mat motionError = cv::Mat::eye(MOT_SIZE, MOT_SIZE, CV_64F);
+    motionError.ptr<double>(0)[0] = Kr*odometryValue.x;         //Sr^2     5
+    motionError.ptr<double>(0)[1] = 0.0;                        //SrSl
+    motionError.ptr<double>(1)[0] = 0.0;                        //SlSr
+    motionError.ptr<double>(1)[1] = Kl*odometryValue.y;         //Sl^2     5
 
-    robotCombinedCovariance=cv::Mat(Gt*robotCombinedCovariance*Gt.t()+Fx.t()*R*Fx).clone();
+    R = motionErrorJacobian*motionError*motionErrorJacobian.t();
+
+    // Sigma_p'
+    robotCombinedCovariance = cv::Mat(Gt*robotCombinedCovariance*Gt.t() + Fx.t()*R*Fx).clone();
 
 
 
-    for(int i=0;i!=STATE_SIZE;++i)
-       for(int j=0;j!=STATE_SIZE;++j)
-            robotState.robotPositionCovariance.ptr<double>(i)[j]=robotCombinedCovariance.ptr<double>(i)[j];
+    for(int i = 0;i != STATE_SIZE; ++i)
+        for(int j = 0;j != STATE_SIZE; ++j)
+            robotState.robotPositionCovariance.ptr<double>(i)[j] = robotCombinedCovariance.ptr<double>(i)[j];
 
 
    // cv::imshow("23",robotCombinedCovariance*1000);
@@ -177,7 +197,7 @@ void EKF_SLAM::MotionPrediction(const cv::Point2d& odometryValue) //[x=right y=l
     //cout<<"//////////////////////////////////////////////////////"<<endl;
     //cout<<"預測的機器人位置"<<robotCombinedState<<endl;
     //cout<<"預測的機器人Covariance"<<robotCombinedCovariance<<endl;
-     cout<<"預測的機器人"<<robotState.robotPositionMean<<endl;
+    std::cout << "預測的機器人" << robotState.robotPositionMean << std::endl;
      //cout<<"預測的機器人"<<robotState.robotPositionCovariance<<endl;
    // cout<<"//////////////////////////////////////////////////////"<<endl;
 

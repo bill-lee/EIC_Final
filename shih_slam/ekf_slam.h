@@ -10,7 +10,12 @@
 class EKF_SLAM
 {
 public:   //0.5  8     //測試0.25   10
-    EKF_SLAM(double w=58.0,int num=0,double gl=0.25,double gc=0,double t=1,double n=20,int weight=10):robotWidth(w),landmarkNum(num),gatingLine(gl),gatingCorner(gc),deltaT(t),newFeatureRadius(n),weighting(weight)
+    EKF_SLAM(double w = 58.0, int num = 0, double gl = 0.25, double gc = 0,
+             double t = 1, double n = 20, int weight = 10,
+             double _Kr = 3.5, double _Kl = 3.5)
+        : robotWidth(w), landmarkNum(num), gatingLine(gl), gatingCorner(gc),
+          deltaT(t), newFeatureRadius(n), weighting(weight),
+          Kr(_Kr), Kl(_Kl)
     {  //n=20
         robotState.robotPositionMean=cv::Scalar::all(0);
 
@@ -92,6 +97,9 @@ private:
     double _EuclideanDistance(const Feature& obsFeautureW, const Feature& candFeautureW);  //輸入為定義於世界座標的特徵
     double _MahalanobisDistance(const cv::Mat& mean,const cv::Mat& covariance);
 
+
+    const double Kr;
+    const double Kl;
 };
 
 #endif // EKF_SLAM_H

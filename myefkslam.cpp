@@ -1,8 +1,11 @@
 #include "myefkslam.h"
 
-lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point) :
-    myrobot(new MyRobot()), EKFTimer(new QTimer),
-    robotWidth(w), robotVelocity(velocity), robotMapOrginal(point)
+lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point, int num, double gl, double gc, double t, double n, int weight, double _Kr, double _Kl)
+    : myrobot(new MyRobot()), EKFTimer(new QTimer),
+      robotWidth(w), robotVelocity(velocity), robotMapOrginal(point),
+      landmarkNum(num), gatingLine(gl), gatingCorner(gc),
+      deltaT(t), newFeatureRadius(n), weighting(weight),
+      Kr(_Kr), Kl(_Kl)
 {
     // establish opencv file stream
     cv::FileStorage loadFile("./camera_calibration.yml", cv::FileStorage::READ);
@@ -62,9 +65,36 @@ lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point) :
     lineExtracter=LineExtraction(20);
     refenceMap.reserve(100000);  // reserve N data space
 
+    connect(this->EKFTimer, SIGNAL(timeout()), this, SLOT(EKFStepExamine()));
+
+    //n=20
+    robotState.robotPositionMean=cv::Scalar::all(0);
+
+    robotState.robotPositionCovariance=cv::Mat::eye(robotState.robotPositionCovariance.size(),robotState.robotPositionCovariance.type());
+    robotState.robotPositionCovariance.ptr<double>(0)[0]=0.001;
+    robotState.robotPositionCovariance.ptr<double>(1)[1]=0.001;
+    robotState.robotPositionCovariance.ptr<double>(2)[2]=0.5;
+
+
+    robotCombinedState=cv::Mat::zeros(STATE_SIZE+OBS_SIZE*landmarkNum,1,CV_64F);
+    robotCombinedCovariance=cv::Mat::eye(STATE_SIZE+OBS_SIZE*landmarkNum,STATE_SIZE+OBS_SIZE*landmarkNum,CV_64F);
+    robotCombinedCovariance.ptr<double>(0)[0]=0.001;
+    robotCombinedCovariance.ptr<double>(1)[1]=0.001;
+    robotCombinedCovariance.ptr<double>(2)[2]=0.5;
+
+
+    landmarkSets.clear();
+    landmarkSets.reserve(5000);  //�w���}�]5000��landmark�Ŷ�
+    candidateFeatureSets.clear();
+    candidateWeighting.clear();
 }
 
-void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y)
+lab405::MyEFKSLAM::~MyEFKSLAM()
+{
+
+}
+
+void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold)
 {
 //    odoValueCurrent = cv::Point2d(0.0, 0.0); // x:right odo y:left odo
     // shih's EKF slam
@@ -75,7 +105,14 @@ void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _
     saveFileIndex = 0;
     // number of scenes
     sceneNum = _sceneNum;
-    gridDistance = abs(_slam_x - _slam_x0)/(sceneNum - 1);
+
+    thresh_count = threshold;
+
+    slam_x = _slam_x;
+    slam_x0 = _slam_x0;
+    slam_y = _slam_y;
+
+    gridDistance = abs(slam_x - slam_x0)/(sceneNum - 1);
     gridDistance = gridDistance*this->gridMapper.GetPixel_meterFactor()*100;
     std::cout << "gridDistance:" << gridDistance << std::endl;
 
@@ -160,12 +197,12 @@ void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _
         cv::imshow("1341",img);
         cv::imshow("13411",img1);
         cv::imshow("13411222 ",cornerEx.cornerImg);
-        while(cv::waitKey(10) != 27)
-        {
-        }
+//        while(cv::waitKey(10) != 27)
+//        {
+//        }
     }
 
-    this->EKFRuner.Initial(lines);
+    this->MapInitial(lines);
     std::cout << "EKF Intial" <<endl;
     this->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
     this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
@@ -181,6 +218,10 @@ void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _
     this->currentEnd.x = _slam_x;
     this->currentEnd.y = _slam_y;
 
+    // initial
+    this->odoValuePrevious = cv::Point2d(0.0, 0.0);
+
+    this->EKFTimer->start(1000);
 
     cv::destroyAllWindows();
 }
@@ -495,10 +536,6 @@ void lab405::MyEFKSLAM::Prediction()
     //    //if(motionMode==true)
 }
 
-void lab405::MyEFKSLAM::Update()
-{
-
-}
 
 void lab405::MyEFKSLAM::Test(int pos)
 {
@@ -507,32 +544,44 @@ void lab405::MyEFKSLAM::Test(int pos)
 
 void lab405::MyEFKSLAM::EKFStepExamine()
 {
-//    myrobot->left_dcmotor->Stop();
-//    myrobot->right_dcmotor->Stop();
-    emit MotorStop();
+    myrobot->left_dcmotor->Stop();
+    myrobot->right_dcmotor->Stop();
+//    emit MotorStop();
 
-    int Pos_Stop_error = 5;
-    int fir_pos = myrobot->left_dcmotor->GetPose();
-    int sec_pos = myrobot->left_dcmotor->GetPose();
+
+    int Pos_Stop_error = 1;
+    int fir_pos = myrobot->right_dcmotor->GetPose();
+    int sec_pos = myrobot->right_dcmotor->GetPose();
+    while (abs(sec_pos - fir_pos) > Pos_Stop_error)
+    {
+//        std::cout << sec_pos << " " << fir_pos << std::endl;
+        fir_pos = sec_pos;
+        sec_pos = myrobot->right_dcmotor->GetPose();
+    }
+//    double ReadingR = sec_pos;
+    odoValueCurrent.x = sec_pos;
+    std::cout << "odoValueCurrent.x = " << odoValueCurrent.x << std::endl;
+
+    fir_pos = myrobot->left_dcmotor->GetPose();
+    sec_pos = myrobot->left_dcmotor->GetPose();
     while (abs(sec_pos - fir_pos) > Pos_Stop_error)
     {
 //        std::cout << sec_pos << " " << fir_pos << std::endl;
         fir_pos = sec_pos;
         sec_pos = myrobot->left_dcmotor->GetPose();
     }
+//    double ReadingL = sec_pos;
+    odoValueCurrent.y = sec_pos;
+    std::cout << "odoValueCurrent.y = " << odoValueCurrent.y << std::endl;
 
 
-//    if(checkBit != true)
-//    {
+    // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
+    // reverse of static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi));
+    double DeltaR = (odoValueCurrent.x - odoValuePrevious.x)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
+    double DeltaL = (odoValueCurrent.y - odoValuePrevious.y)*CV_PI*32.5*0.9487/(4096*3.333*14);
 
-//        myekfslam->myrobot->right_dcmotor->Stop();
-//        myekfslam->myrobot->left_dcmotor->Stop();
-//        return;
-
-//    }
-
-//    clock_t startTime=clock();
-//    //img=cv::Scalar::all(0);
+    odoValuePrevious.x = odoValueCurrent.x;
+    odoValuePrevious.y = odoValueCurrent.y;
 
 //    saveFileIndex++;
 //    readFlag=true;
@@ -550,100 +599,115 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    odoValuePrevious.x=odoValueCurrent.x;
 //    odoValuePrevious.y=odoValueCurrent.y;
 
+
+
+    ////////////////////////////////////////////////////////////////////////
+    //feature extraction
 //    std::vector<cv::Point2d> points;
 //    std::vector<Line> line;
 //    std::vector<Corner> cor;
+    std::vector<double> laserdata;
+    std::vector<cv::Point2d> points;
+    std::vector<Line> line;
+    std::vector<Corner> cor;
+    myrobot->laser_slam->GetOneLaserData(laserdata);
 
-//    ////////////////////////////////////////////////////////////////////////
-//    //feature extraction
-//    myekfslam->myrobot->mapper.RangesDataToPointsData(myekfslam->myrobot->rawLaserScanData,points);
-//    myekfslam->myrobot->lineExtracter.SplitAndMerge(points,line);
+    this->mapper.RangesDataToPointsData(laserdata,points);
+    this->lineExtracter.SplitAndMerge(points,line);
 
-//    ////////////////////////////////////////////////////////////////////////
-//    //motion estimation
-//    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
-//    myekfslam->myrobot->EKFRuner.MotionPrediction(cv::Point2d(DeltaLeft,DeltaRight));
 
-//    //SLAM_Robot->gridMapper.InsertLocalGridMap();
+    ////////////////////////////////////////////////////////////////////////
+    //motion estimation
+    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
+    // Prediction
+    this->MotionPrediction(DeltaR, DeltaL);
 
-//    myekfslam->myrobot->EKFRuner.DataAssociation(line,cor);
+    //SLAM_Robot->gridMapper.InsertLocalGridMap();
+
+    this->DataAssociation(line,cor);
 //    myekfslam->myrobot->robotPosition=myekfslam->myrobot->EKFRuner.GetRobotPose();
 
 
-
+    std::cout << "after data ass" << std::endl;
 //    // QMessageBox::information(this, "Error!", "ok1!");
 
-//    ////////////////////////////////////////////////////////////////////////
-//    //ICP correction
-//    vector<cv::Point2d> temp;
-//    dataConvertRobotToWorld(points,myekfslam->myrobot->robotPosition,temp);
+    ////////////////////////////////////////////////////////////////////////
+    //ICP correction
+    vector<cv::Point2d> temp;
+    dataConvertRobotToWorld(points, this->robotPosition, temp);
 
-//    double percent=0.5;
-//    //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
-//    cv::Point3d adjustPose;
-//    adjustPose.x=0;
-//    adjustPose.y=0;
-//    adjustPose.z=0;
-//    ////////////////////////////////////////////////////////////////////////
-//    //­×¥¿«áªº¾÷¾¹¤H¦ì¸m
+    std::cout << "test1" << std::endl;
+    double percent=0.5;
+    //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
+    cv::Point3d adjustPose;
+    adjustPose.x=0;
+    adjustPose.y=0;
+    adjustPose.z=0;
+    ////////////////////////////////////////////////////////////////////////
+    // robot pose after adjust
+    std::cout << "test2" << std::endl;
+    RobotState robotpath1;
 
-//    RobotState robotpath1;
+    robotpath1.robotPositionMean.ptr<double>(0)[0]= adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
+    robotpath1.robotPositionMean.ptr<double>(1)[0]= adjustPose.y + this->robotPosition.robotPositionMean.ptr<double>(1)[0];
+    robotpath1.robotPositionMean.ptr<double>(2)[0]= adjustPose.z + this->robotPosition.robotPositionMean.ptr<double>(2)[0];
+    robotpath1.robotPositionCovariance = this->robotPosition.robotPositionCovariance.clone();
 
-//    robotpath1.robotPositionMean.ptr<double>(0)[0]=adjustPose.x+myekfslam->myrobot->robotPosition.robotPositionMean.ptr<double>(0)[0];
-//    robotpath1.robotPositionMean.ptr<double>(1)[0]=adjustPose.y+myekfslam->myrobot->robotPosition.robotPositionMean.ptr<double>(1)[0];
-//    robotpath1.robotPositionMean.ptr<double>(2)[0]=adjustPose.z+myekfslam->myrobot->robotPosition.robotPositionMean.ptr<double>(2)[0];
-//    robotpath1.robotPositionCovariance=myekfslam->myrobot->robotPosition.robotPositionCovariance.clone();
+    // xyz project to plane
+    cv::Point2d imagePose = this->gridMapper.GetRobotCenter(robotpath1);
 
-//    //xyz¹ê»Ú§ë¼v¦Ü¥­­±ªü
-//    cv::Point2d imagePose=myekfslam->myrobot->gridMapper.GetRobotCenter(robotpath1);
+    this->currentStart.x=imagePose.x;
+    this->currentStart.y=imagePose.y;
 
-//    myekfslam->myrobot->currentStart.x=imagePose.x;
-//    myekfslam->myrobot->currentStart.y=imagePose.y;
+    this->SetRobotPose(robotpath1);
+    ///////////////////////////////////// ///////////////////////////////////
 
-//    myekfslam->myrobot->EKFRuner.SetRobotPose(robotpath1);
-//    ///////////////////////////////////// ///////////////////////////////////
+    std::cout << "test3" << std::endl;
+    //add new map
+    for(int k=0;k!=points.size();++k)
+    {
 
-//    //add new map
-//    for(int k=0;k!=points.size();++k)
-//    {
+        double x=cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x-sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(0)[0];
+        double y=sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x+cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(1)[0];
+        //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
+        this->refenceMap.push_back(cv::Point2d(x,y));
+        //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
 
-//        double x=cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x-sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(0)[0];
-//        double y=sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x+cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(1)[0];
-//        //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
-//        myekfslam->myrobot->refenceMap.push_back(cv::Point2d(x,y));
-//        //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
+    }
 
-//    }
+    ////////////////////////////////////////////////////////////////////////
+    //mapping process
+    std::cout << "test3.5" << std::endl;
+    this->mapper.InsertLocalLandmarkMap(points,robotpath1);
+    std::cout << "test3.6" << std::endl;
+    landMarkImg = this->mapper.GetLandmarkMap();
+    std::cout << "test3.7" << std::endl;
+    this->gridMapper.InsertLocalGridMap(laserdata, robotpath1);
+    std::cout << "test3.8" << std::endl;
+    this->gridMapper.GetOccupancyGridMap(gridImg);
+    std::cout << "test3.9" << std::endl;
 
-//    ////////////////////////////////////////////////////////////////////////
-//    //mapping process
+    this->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
+    std::cout << "test4" << std::endl;
 
-//    myekfslam->myrobot->mapper.InsertLocalLandmarkMap(points,robotpath1);
-//    landMarkImg = myekfslam->myrobot->mapper.GetLandmarkMap();
-//    myekfslam->myrobot->gridMapper.InsertLocalGridMap(myekfslam->myrobot->rawLaserScanData,robotpath1);
-//    myekfslam->myrobot->gridMapper.GetOccupancyGridMap(gridImg);
-
-//    myekfslam->myrobot->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
-
-
-//    ////////////////////////////////////////////////////////////////////////
-//    //path planning
-//    cv::Point2d tempEnd;
-//    cv::Mat plannignGridMap;
-//    double search_rect=80;
-//    myekfslam->myrobot->planner.SetGridMap(gridImg);
-//    myekfslam->myrobot->planner.GetPathPlanningMap(plannignGridMap);
-//    cv::circle(plannignGridMap,myekfslam->myrobot->currentStart, 2, cv::Scalar(255,255,255), -1 );
-//    myekfslam->myrobot->FindCurrentNodeEnd(plannignGridMap,search_rect,myekfslam->myrobot->currentStart,myekfslam->myrobot->currentEnd,tempEnd);
+    ////////////////////////////////////////////////////////////////////////
+    //path planning
+    cv::Point2d tempEnd;
+    cv::Mat plannignGridMap;
+    double search_rect=80;
+    this->planner.SetGridMap(gridImg);
+    this->planner.GetPathPlanningMap(plannignGridMap);
+    cv::circle(plannignGridMap, this->currentStart, 2, cv::Scalar(255,255,255), -1 );
+    this->FindCurrentNodeEnd(plannignGridMap, search_rect, this->currentStart, this->currentEnd, tempEnd);
 
 
-//    double rsrart=sqrt(pow(myekfslam->myrobot->currentStart.x,2.0) +pow(myekfslam->myrobot->currentStart.y,2.0)  );
-//    double rend=sqrt(pow(myekfslam->myrobot->currentEnd.x,2.0) +pow(myekfslam->myrobot->currentEnd.y,2.0)  );
-//    double rFinal=sqrt(pow(myekfslam->myrobot->FinalEnd.x,2.0) +pow(myekfslam->myrobot->FinalEnd.y,2.0)  );
-//    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
+    double rstart=sqrt(pow(this->currentStart.x,2.0) +pow(this->currentStart.y,2.0)  );
+    double rend=sqrt(pow(this->currentEnd.x,2.0) +pow(this->currentEnd.y,2.0)  );
+    double rFinal=sqrt(pow(this->FinalEnd.x,2.0) +pow(this->FinalEnd.y,2.0)  );
+    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
 
-//    cv::Mat color_plannignGridMap;
-//    cv::cvtColor(plannignGridMap,color_plannignGridMap,CV_GRAY2BGR);
+    cv::Mat color_plannignGridMap;
+    cv::cvtColor(plannignGridMap,color_plannignGridMap,CV_GRAY2BGR);
 
 
 //    //////////////////////////////////////////////
@@ -671,7 +735,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //        return;
 //    }
 
-//    if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=gridDistance*sceneCnt)
+//    if(robotpath1.robotPositionMean.ptr<double>(0)[0] >= gridDistance*sceneCnt)
 //        //if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=sceneCnt*5)
 //    {
 
@@ -695,98 +759,98 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
 
 
-//    //if( (rend<=rsrart))  //¥b®|¤j©ó©Îµ¥©ó2*pixelFactor;
+    //if( (rend<=rsrart))  //¥b®|¤j©ó©Îµ¥©ó2*pixelFactor;
 
-//    if( rsrart <= rTempEnd && threcont - ui->doubleSpinBox->value() >= myekfslam->myrobot->commandSets.size())
-//    {
-//        myekfslam->myrobot->commandSets = std::queue<std::pair<int,double>> ();
-//        myekfslam->myrobot->planner.SetStartNode(myekfslam->myrobot->currentStart);
+    if( rstart <= rTempEnd && temp_threscont - thresh_count >= this->commandSets.size())
+    {
+        this->commandSets = std::queue<std::pair<int,double>> ();
+        this->planner.SetStartNode(this->currentStart);
 
-//        do
-//        {
+        do
+        {
 
-//            myekfslam->myrobot->planner.SetEndNode(tempEnd);
-//            myekfslam->myrobot->planner.AStartPlanning(myekfslam->myrobot->robotPathSets);
-//            //  QMessageBox::information(this, "Error!", "2_2!!"+QString::number(SLAM_Robot->robotPathSets.size()));
-//            //  cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
+            this->planner.SetEndNode(tempEnd);
+            this->planner.AStartPlanning(this->robotPathSets);
+            //  QMessageBox::information(this, "Error!", "2_2!!"+QString::number(SLAM_Robot->robotPathSets.size()));
+            //  cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
-//            //  cout<<"tempEnd1:"<<tempEnd<<endl;
-//            //  cv::imshow("show",color_plannignGridMap);
-//            //  cv::waitKey(1);
-
-
-//            // QMessageBox::information(this, "Error!", "2_1_1");
+            //  cout<<"tempEnd1:"<<tempEnd<<endl;
+            //  cv::imshow("show",color_plannignGridMap);
+            //  cv::waitKey(1);
 
 
-//            if(myekfslam->myrobot->robotPathSets.size()!=0)
-//            {
-//                myekfslam->myrobot->PathSmoothing();
-
-//                myekfslam->myrobot->TrajectoryGenerationSmoothing();
-//                threcont=myekfslam->myrobot->commandSets.size();
+            // QMessageBox::information(this, "Error!", "2_1_1");
 
 
-//            }
-//            else
-//            {
+            if(this->robotPathSets.size()!=0)
+            {
+                this->PathSmoothing();
+
+                this->TrajectoryGenerationSmoothing();
+                temp_threscont = this->commandSets.size();
 
 
-//                tempEnd.x=myekfslam->myrobot->currentStart.x+10;
-//                tempEnd.y=myekfslam->myrobot->currentStart.y;
+            }
+            else
+            {
 
 
-//            }
-//            //cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,0,255), 2  );
-//            // cout<<"tempEnd2:"<<tempEnd<<endl;
-
-//            //  cv::imshow("show",color_plannignGridMap);
-//            //  cv::waitKey(1);
-//            // QMessageBox::information(this, "Error!", "2_1_2");
+                tempEnd.x = this->currentStart.x+10;
+                tempEnd.y = this->currentStart.y;
 
 
-//        }while(myekfslam->myrobot->robotPathSets.size()==0);
+            }
+            //cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,0,255), 2  );
+            // cout<<"tempEnd2:"<<tempEnd<<endl;
 
-//        this->SetMotionCommand();
+            //  cv::imshow("show",color_plannignGridMap);
+            //  cv::waitKey(1);
+            // QMessageBox::information(this, "Error!", "2_1_2");
 
-//        /*
-//        if(SLAM_Robot->robotPathSets.size()!=0)
-//        {
-//            SLAM_Robot->PathSmoothing();
 
-//            SLAM_Robot->TrajectoryGenerationSmoothing();
-//            threcont=SLAM_Robot->commandSets.size();
+        }while(this->robotPathSets.size()==0);
 
-//            this->SetMotionCommand();
-//        }
-//*/
+        this->SetMotionCommand();
+
+        /*
+        if(SLAM_Robot->robotPathSets.size()!=0)
+        {
+            SLAM_Robot->PathSmoothing();
+
+            SLAM_Robot->TrajectoryGenerationSmoothing();
+            threcont=SLAM_Robot->commandSets.size();
+
+            this->SetMotionCommand();
+        }
+*/
 //        ui->textBrowser->append("=====================");
 //        ui->textBrowser->append("[robotPathSets size]:"+QString::number(myekfslam->myrobot->robotPathSets.size()));
-//        for(int i=0;i!=myekfslam->myrobot->robotPathSets.size();++i)
-//        {
+        for(int i = 0;i != this->robotPathSets.size();++i)
+        {
 
-//            cv::circle(color_plannignGridMap, cv::Point(myekfslam->myrobot->robotPathSets[i].x,myekfslam->myrobot->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
+            cv::circle(color_plannignGridMap, cv::Point(this->robotPathSets[i].x, this->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
 //            ui->textBrowser->setFontWeight( QFont::DemiBold );
 //            ui->textBrowser->setTextColor( QColor( "red" ) );
 //            ui->textBrowser->append("[robotPathSets]:"+QString::number(myekfslam->myrobot->robotPathSets[i].x)+" "+QString::number(myekfslam->myrobot->robotPathSets[i].y));
 
-//        }
+        }
 //        ui->textBrowser->append("=====================");
-//    }
+    }
 
 
 
 
 
 
-//    // else
-//    // ui->textBrowser->append("=====no path fuck========");
+    // else
+    // ui->textBrowser->append("=====no path fuck========");
 
 
-//    cv::line( color_plannignGridMap, tempEnd, myekfslam->myrobot->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
+    cv::line(color_plannignGridMap, tempEnd,this->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
 
-//    cv::circle(color_plannignGridMap, myekfslam->myrobot->currentStart, 4, cv::Scalar(0,255,0), 2  );
-//    cv::circle(color_plannignGridMap, myekfslam->myrobot->currentEnd, 4, cv::Scalar(0,255,0), 2  );
-//    cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
+    cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
+    cv::circle(color_plannignGridMap, this->currentEnd, 4, cv::Scalar(0,255,0), 2  );
+    cv::circle(color_plannignGridMap, tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
 //    clock_t endTime=clock();
 //    double total=(double)(endTime-startTime)/CLK_TCK;
@@ -795,28 +859,796 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    ui->textBrowser_slam->setTextColor( QColor( "red" ) );
 //    ui->textBrowser_slam->append("[pose]:" + QString::number(robotpath1.robotPositionMean.ptr<double>(0)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(1)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(2)[0]));
 
-//    std::cout << "[Robot pose]:" << robotpath1.robotPositionMean << std::endl;
+    std::cout << "[Robot pose]:" << robotpath1.robotPositionMean << std::endl;
 
 //    std::cout << "single step Time:" << total << std::endl;
-//    cv::imshow("gridImg",gridImg);
-//    cv::imshow("landMarkImg",landMarkImg);
-//    cv::imshow("color_plannignGridMap",color_plannignGridMap);
-//    cv::imshow("plannignGridMap",plannignGridMap);
-//    static int count=0;
-//    QString name="Img/"+QString::number(count)+".jpg";
-//    cv::imwrite(name.toStdString(),color_plannignGridMap);
-//    cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
-//    cv::imwrite("Img/gridImg.jpg",gridImg);
-//    cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
-//    count++;
+    cv::imshow("gridImg",gridImg);
+    cv::imshow("landMarkImg",landMarkImg);
+    cv::imshow("color_plannignGridMap",color_plannignGridMap);
+    cv::imshow("plannignGridMap",plannignGridMap);
+    static int count=0;
+    QString name="Img/"+QString::number(count)+".jpg";
+    cv::imwrite(name.toStdString(),color_plannignGridMap);
+    cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
+    cv::imwrite("Img/gridImg.jpg",gridImg);
+    cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
+    count++;
 
-//    cv::waitKey(1);
+    cv::waitKey(1);
 
 
 
 
     //    //if(motionMode==true)
 }
+
+// Propagation the time k state to k + 1 state via motion model
+void lab405::MyEFKSLAM::MotionPrediction(const double DeltaR, const double DeltaL)
+{
+    // DeltaR, DeltaL
+//    double DeltaR = _DeltaR;
+//    double DeltaL = _DeltaL;
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Get Time k postition
+//    double x = robotState.robotPositionMean.ptr<double>(0)[0];
+//    double y = robotState.robotPositionMean.ptr<double>(1)[0];
+    double phi = robotState.robotPositionMean.ptr<double>(2)[0];  //rad
+
+    // DeltaC = (DeltaR + DeltaL)/2, the trajectory of center of mass
+    double DeltaC = (DeltaR + DeltaL)/2.0;
+    double DeltaTheta = (DeltaR - DeltaL)/robotWidth;
+
+    cv::Mat Fx = cv::Mat::eye(STATE_SIZE, STATE_SIZE + OBS_SIZE*landmarkNum, CV_64F);  //3*(3+3*N)
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //------±a¤J±À¾Éªº¾÷¾¹¤Hmotion modelªºmean­È  Ut=f(command,Ut-1)-------------------------------------------------------
+    // bring means into motion model, Ut=f(command, Ut-1)
+
+    //*** deltaT?
+    // X' = X + DeltaC*cos(theta + delta_theta/2)
+    // Y' = Y + DeltaC*cos(theta + delta_theta/2)
+    // theta' = theta + delta_theta;
+    // which delta_theta = (DeltaR - DeltaL)/b
+    double tempX = DeltaC*cos(phi + DeltaTheta/2.0*deltaT);
+    double tempY = DeltaC*sin(phi + DeltaTheta/2.0*deltaT);
+    double tempTheta = DeltaTheta*deltaT;
+
+    // take displacement into current robot state
+    robotState.robotPositionMean.ptr<double>(0)[0] += tempX;
+    robotState.robotPositionMean.ptr<double>(1)[0] += tempY;
+    robotState.robotPositionMean.ptr<double>(2)[0] += tempTheta;
+
+    //***y vector ??
+    robotCombinedState.ptr<double>(0)[0] += tempX;
+    robotCombinedState.ptr<double>(1)[0] += tempY;
+    robotCombinedState.ptr<double>(2)[0] += tempTheta;
+
+    // angle normalize
+    while(robotState.robotPositionMean.ptr<double>(2)[0] > CV_PI)
+    {
+        robotState.robotPositionMean.ptr<double>(2)[0] -= 2*CV_PI;
+        robotCombinedState.ptr<double>(2)[0] -= 2*CV_PI;
+    }
+    while(robotState.robotPositionMean.ptr<double>(2)[0] < -CV_PI)
+    {
+        robotState.robotPositionMean.ptr<double>(2)[0] += 2*CV_PI;
+        robotCombinedState.ptr<double>(2)[0] += 2*CV_PI;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //------±a¤J±À¾Éªº¾÷¾¹¤Hmotion modelªºcovariance  -------------------------------------------------------
+    //(a):·ímotion model§ïÅÜ®É motion model Jacobians­n§ï³oÃä
+
+
+    // (a): Jacobians
+    // Fp, Jacobain of robot state (p), derivative of p' with respect (x, y, theta)
+    cv::Mat Gt = cv::Mat::eye(STATE_SIZE + OBS_SIZE*landmarkNum, STATE_SIZE + OBS_SIZE*landmarkNum, CV_64F);
+    Gt.ptr<double>(0)[2] = -DeltaC*sin(phi + DeltaTheta/2.0*deltaT);
+    Gt.ptr<double>(1)[2] = DeltaC*cos(phi + DeltaTheta/2.0*deltaT);
+
+
+
+    // (b): motion
+    //(b):·ímotion model§ïÅÜ®É motion error model Jacobians­n§ï³oÃä
+    cv::Mat motionErrorJacobian = cv::Mat::zeros(STATE_SIZE, MOT_SIZE, CV_64F);
+    cv::Mat R = cv::Mat::zeros(STATE_SIZE, STATE_SIZE, CV_64F);
+    motionErrorJacobian.ptr<double>(0)[0] = 0.5*cos(phi + DeltaTheta/2.0*deltaT) - DeltaC/(2.0*robotWidth)*deltaT*sin(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(0)[1] = 0.5*cos(phi + DeltaTheta/2.0*deltaT) + DeltaC/(2.0*robotWidth)*deltaT*sin(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(1)[0] = 0.5*sin(phi + DeltaTheta/2.0*deltaT) + DeltaC/(2.0*robotWidth)*deltaT*cos(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(1)[1] = 0.5*sin(phi + DeltaTheta/2.0*deltaT) - DeltaC/(2.0*robotWidth)*deltaT*cos(phi + DeltaTheta/2.0*deltaT);
+    motionErrorJacobian.ptr<double>(2)[0] = deltaT/robotWidth;
+    motionErrorJacobian.ptr<double>(2)[1] = -deltaT/robotWidth;
+
+    // (c) motion noise
+    cv::Mat motionError = cv::Mat::eye(MOT_SIZE, MOT_SIZE, CV_64F);
+    motionError.ptr<double>(0)[0] = Kr*DeltaR;         //Sr^2     5
+    motionError.ptr<double>(0)[1] = 0.0;                        //SrSl
+    motionError.ptr<double>(1)[0] = 0.0;                        //SlSr
+    motionError.ptr<double>(1)[1] = Kl*DeltaL;         //Sl^2     5
+
+    R = motionErrorJacobian*motionError*motionErrorJacobian.t();
+
+    // Sigma_p'
+    robotCombinedCovariance = cv::Mat(Gt*robotCombinedCovariance*Gt.t() + Fx.t()*R*Fx).clone();
+
+
+//    for (int y = 0; y < STATE_SIZE; y++)
+//        double *ptr = robotState.robotPositionCovariance.ptr<double>(y);
+//        double robotCombinedCovariance.ptr<double>(i)[j];
+//        for (int x = 0; x < STATE_SIZE; x++)
+//            ptr[x] =
+
+    for(int i = 0;i != STATE_SIZE; ++i)
+        for(int j = 0;j != STATE_SIZE; ++j)
+            robotState.robotPositionCovariance.ptr<double>(i)[j] = robotCombinedCovariance.ptr<double>(i)[j];
+
+
+   // cv::imshow("23",robotCombinedCovariance*1000);
+    //cv::waitKey(1);
+
+    //////////////////////////////////////////////////////
+    //cout<<"//////////////////////////////////////////////////////"<<endl;
+    //cout<<"¹w´úªº¾÷¾¹¤H¦ì¸m"<<robotCombinedState<<endl;
+    //cout<<"¹w´úªº¾÷¾¹¤HCovariance"<<robotCombinedCovariance<<endl;
+    std::cout << "¹w´úªº¾÷¾¹¤H" << robotState.robotPositionMean << std::endl;
+     //cout<<"¹w´úªº¾÷¾¹¤H"<<robotState.robotPositionCovariance<<endl;
+    // cout<<"//////////////////////////////////////////////////////"<<endl;
+}
+
+void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature, const std::vector<Corner> &obsCornerFeature)
+{
+    //obsFeature: match corner and line features in robot coordinate
+
+
+    LandmarkMapping mapper;
+    cv::Mat imgg(500,500,CV_8UC3);
+    imgg=cv::Scalar::all(0);
+    cv::circle(imgg, cv::Point(0+250,0+250), 3, cv::Scalar(255,0,255), 2 );
+
+
+    for(int i=0;i!=landmarkSets.size();++i)
+    {
+
+        mapper.DrawLine(landmarkSets[i],RobotState(),cv::Scalar(0,255,0),1,cv::Point2d(250,250),1,imgg);
+
+    }
+
+              // mapper.DrawLine(temp11,RobotState(),cv::Scalar(255,0,0),10,cv::Point2d(250,250),1,imgg);
+
+
+    cout<<"=================DataAssociation================================"<<endl;
+    vector<bool> obsMatchFlag(obsLineFeature.size()+obsCornerFeature.size(),false);  //match¨ìªº¬°true
+    vector<int> landmarkMatchingNum(obsLineFeature.size()+obsCornerFeature.size(),-1);  //¨Smatch¨ìªº½s¸¹¬°-1
+    vector<Feature> obsFeature;
+    obsFeature.reserve(obsLineFeature.size()+obsCornerFeature.size());
+    std::cout << "1test" << std::endl;
+    for(int i=0;i!=obsLineFeature.size();++i)
+    {
+        Feature temp;
+        temp.featureMean=obsLineFeature[i].lineMean.clone();
+        temp.featureCovariance=obsLineFeature[i].lineCovariance.clone();
+        temp.SetFeatureType(Line_Feature);
+        obsFeature.push_back(temp);
+    }
+    std::cout << "2test" << std::endl;
+    for(int i=0;i!=obsCornerFeature.size();++i)
+    {
+        Feature temp;
+        temp.featureMean=obsCornerFeature[i].cornerMean.clone();
+        temp.featureCovariance=obsCornerFeature[i].cornerCovariance.clone();
+        temp.SetFeatureType(Corner_Feature);
+
+        obsFeature.push_back(temp);
+    }
+    std::cout << "3test" << std::endl;
+    vector<Feature> newFeature;
+    newFeature.reserve(obsLineFeature.size() + obsCornerFeature.size());
+
+   // cout<<"Æ[¹î¯S¼x¼Æ¶q:"<<obsFeature.size()<<endl;
+
+        std::cout << "4test" << std::endl;
+    for(int i=0;i!=obsFeature.size();++i)
+    {
+        //obsFeature ³o¤@¨B©ÒÂ^¨ú¨ìªº¯S¼x
+
+        /*
+        Feature transferTemp;
+      //  Feature gobalLineobs;
+        //±N½u¯S¼xÂà­¼¯S¼x«¬ºA
+        transferTemp.featureMean=obsLineFeature[i].lineMean;
+        transferTemp.featureCovariance=obsLineFeature[i].lineCovariance;
+        transferTemp.SetFeatureType(Line_Feature);
+
+        //ConvertRobotToWorld(transferTemp,robotState,gobalLineobs);  //§â½u¯S¼x¥Ñ¾÷¾¹¤H®y¼ÐÂà¨ì¥@¬É®y¼Ð¤W
+        */
+        cv::Mat H_min, innovation_min, innovationCovariance_min;
+
+        double GatingFeature=0;
+
+        if(obsFeature[i].GetFeatureType()==Line_Feature)
+            GatingFeature =gatingLine;
+        else
+            GatingFeature =gatingCorner;
+
+
+        //±N©Ò¦³Â^¨ú¨ì¯S¼x»P¦a¹Ï¶i¦æ¤Ç°t
+        for(int j=0;j!=landmarkSets.size();++j)
+        {
+           if(obsFeature[i].GetFeatureType()!=landmarkSets[i].GetFeatureType())
+               continue;
+
+           Feature localLandmark;
+           ConvertWorldToRobot(landmarkSets[j],robotState,localLandmark); //±Nlandmark¥Ñ¥@¬É®y¼ÐÂà¨ì¾÷¾¹¤H®y¼Ð¤W
+           //measurement estimation
+           // Jacobian of coordinate transformation between the world frame and the sensor frame
+           cv::Mat H = cv::Mat::zeros(OBS_SIZE, STATE_SIZE + OBS_SIZE*landmarkNum,CV_64F);
+           double x=robotState.robotPositionMean.ptr<double>(0)[0];
+           double y=robotState.robotPositionMean.ptr<double>(1)[0];
+           //landmark¥@¬É®y¼Ðªºr alpha
+           double alpha=landmarkSets[j].featureMean.ptr<double>(1)[0];
+
+           // covariance
+           H.ptr<double>(0)[0]=-cos(alpha);
+           H.ptr<double>(0)[1]=-sin(alpha);
+           H.ptr<double>(1)[2]=-1;
+           H.ptr<double>(0)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)] = 1;
+           H.ptr<double>(0)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)+1] = x*sin(alpha) - y*cos(alpha);
+           H.ptr<double>(1)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)+1] = 1;
+
+
+            //innovation: r alpha
+
+          // cv::Mat innovation(obsLineFeature[i].lineMean.size(),obsLineFeature[i].lineMean.type());
+           cv::Mat innovation=(obsFeature[i].featureMean-localLandmark.featureMean);
+
+           //normalize
+
+           while(innovation.ptr<double>(1)[0]> CV_PI)
+           {
+               innovation.ptr<double>(1)[0] -= 2*CV_PI;
+           }
+           while(innovation.ptr<double>(1)[0]< -CV_PI)
+           {
+               innovation.ptr<double>(1)[0] += 2*CV_PI;
+           }
+
+           cv::Mat innovationCovariance=H*robotCombinedCovariance*H.t()+obsFeature[i].featureCovariance;
+
+           double gating=_MahalanobisDistance(innovation,innovationCovariance);
+
+
+           if(gating<=GatingFeature)
+           {
+
+                H_min=H.clone();
+                innovation_min=innovation.clone();
+                innovationCovariance_min=innovationCovariance.clone();
+
+                landmarkMatchingNum[i]=j;
+                GatingFeature=gating;
+                obsMatchFlag[i]=true;
+
+           }
+
+        }
+        if ( obsMatchFlag[i]== true)//match
+        {
+
+
+            Feature temp11;
+
+
+            ConvertRobotToWorld(obsFeature[i],robotState,temp11);
+
+            mapper.DrawLine(landmarkSets[landmarkMatchingNum[i]],RobotState(),cv::Scalar(255,0,0),2,cv::Point2d(250,250),1,imgg);
+            mapper.DrawLine(temp11,RobotState(),cv::Scalar(0,0,255),2,cv::Point2d(250,250),1,imgg);
+
+
+            cout<<"match¨ì¤F  ²Ä"<<i<<"Æ[¹î»P ²Ä"<<landmarkMatchingNum[i]<<"¦a¹Ï  ¤À¼Æ:"<<endl;
+            cout<<"§ó·s«e"<<robotState.robotPositionMean<<endl;
+            Update(H_min,innovation_min,innovationCovariance_min);  //kalman filter framework
+            cout<<"§ó·s«á"<<robotState.robotPositionMean<<endl;
+
+
+
+            //////////////////////////////////////
+//            count++;
+
+        }
+        else
+        {
+            newFeature.push_back(obsFeature[i]);  //¨S¦³match¨ìªº¥i¯à¬°·sªº¯S¼x
+           // cout<<"¥[¤J­Ô¿ï¤H¦W³æ"<<endl;
+           // AddNewLandmark(obsFeature[i]);
+        }
+
+    }
+    std::cout << "5test" << std::endl;
+
+
+
+    //feature selection ¨Ï¥Î¯S¼xÂI¿z¿ï
+    vector<Feature> map;
+    FeatureSelection(newFeature,map);
+     //cout<<"·s¼W´X­Ólandmark¼Æ¶q"<<map.size()<<endl;
+    for(int i=0;i!=map.size();++i)
+    {
+        Feature localTemp;
+        ConvertWorldToRobot(map[i],robotState,localTemp);
+        AddNewLandmark(localTemp);
+       // cout<<"localTemp"<<localTemp.featureMean<<endl;
+
+    }
+    std::cout << "6test" << std::endl;
+
+
+
+    cv::imshow("imgg",imgg);
+    cv::waitKey(1);
+
+    std::cout << "7test" << std::endl;
+
+/*
+    cout<<"¼W¥[ªº¼Æ¥Ø:"<<map.size()<<" ¦a¹Ï¼Æ¶q:"<<landmarkSets.size()<<endl;
+    cout<<"¦a¹Ï¯S¼x(¾÷¾¹¤H®y¼Ð)==========="<<endl;
+    for(int i=0;i!=landmarkSets.size();++i)
+    {
+        Feature localLandmark;
+        ConvertWorldToRobot(landmarkSets[i],robotState,localLandmark);
+        cout<<"²Ä"<<i<<"­Ó:"<<localLandmark.featureMean<<endl;
+        //cout<<"²Ä"<<i<<"­Ó "<<landmarkSets[i].featureMean<<endl;
+    }
+    */
+
+   // cout<<"=========================================================="<<endl;
+   // cout<<"¾÷¾¹¤H§ó·s¦ì¸m"<<endl;
+    //cout<<robotCombinedState<<endl;
+    ///cout<<"¾÷¾¹¤H§ó·s¦ì¸mCovariance"<<endl;
+    //cout<<robotCombinedCovariance<<endl;
+}
+
+double lab405::MyEFKSLAM::_MahalanobisDistance(const cv::Mat &mean, const cv::Mat &covariance)
+{
+    cv::Mat mahalanobisDistance=(mean.t()*(covariance.inv())*mean);
+
+    return mahalanobisDistance.ptr<double>(0)[0];
+}
+
+void lab405::MyEFKSLAM::Update(const cv::Mat &H, const cv::Mat &innovation, const cv::Mat &innovationCovariance)
+{
+    cv::Mat kalmanGain=robotCombinedCovariance*H.t()*(innovationCovariance.inv());
+    cv::Mat robotPositonTemp=robotCombinedState+kalmanGain*innovation;
+    cv::Mat I=cv::Mat::eye(STATE_SIZE+OBS_SIZE*landmarkNum,STATE_SIZE+OBS_SIZE*landmarkNum,CV_64F);
+    cv::Mat robotCovarianceTemp=(I-kalmanGain*H)*robotCombinedCovariance;
+
+
+
+    robotCombinedState=robotPositonTemp.clone();
+    robotCombinedCovariance=robotCovarianceTemp.clone();
+
+    robotState.robotPositionMean.ptr<double>(0)[0]=robotCombinedState.ptr<double>(0)[0];
+    robotState.robotPositionMean.ptr<double>(1)[0]=robotCombinedState.ptr<double>(1)[0];
+    robotState.robotPositionMean.ptr<double>(2)[0]=robotCombinedState.ptr<double>(2)[0];
+
+
+    for(int i=0;i!=STATE_SIZE;++i)
+       for(int j=0;j!=STATE_SIZE;++j)
+            robotState.robotPositionCovariance.ptr<double>(i)[j]=robotCombinedCovariance.ptr<double>(i)[j];
+
+}
+
+void lab405::MyEFKSLAM::AddNewLandmark(const Feature &singleFeature)
+{
+    //ÂX¤j¯x°}
+    cv::Mat extendMap=cv::Mat::zeros(STATE_SIZE+OBS_SIZE*(++landmarkNum),1,CV_64F);
+    cv::Mat extendMapC=cv::Mat::zeros(extendMap.rows,extendMap.rows,CV_64F);
+    //cv::Mat H = cv::Mat::zeros(OBS_SIZE,STATE_SIZE+OBS_SIZE*landmarkNum,CV_64F);
+
+    Feature worldFeature;
+    ConvertRobotToWorld(singleFeature,robotState,worldFeature);  //compounding Ãö«Y
+    //»Ý­nÂà¦¨¥@¬É®y¼Ðªºr alpha
+    double r=worldFeature.featureMean.ptr<double>(0)[0];
+    double alpha=worldFeature.featureMean.ptr<double>(1)[0];
+
+    double x=robotState.robotPositionMean.ptr<double>(0)[0];
+    double y=robotState.robotPositionMean.ptr<double>(1)[0];
+
+    //mean
+    for(int i=0; i<robotCombinedState.rows;i++)
+    {
+        extendMap.ptr<double>(i)[0]=robotCombinedState.ptr<double>(i)[0];
+
+    }
+
+    extendMap.ptr<double>(robotCombinedState.rows)[0]=r;
+    extendMap.ptr<double>(robotCombinedState.rows+1)[0]=alpha;
+
+    cout<<"addstate"<<extendMap<<endl;
+
+
+    cv::Mat H1=cv::Mat::zeros(OBS_SIZE,STATE_SIZE,CV_64F);
+    cv::Mat H2=cv::Mat::eye(OBS_SIZE,OBS_SIZE,CV_64F);
+
+    H1.ptr<double>(0)[0]=-cos(alpha);
+    H1.ptr<double>(0)[1]=-sin(alpha);
+    H1.ptr<double>(1)[2]=-1;
+
+    H2.ptr<double>(0)[1]=x*sin(alpha)-y*cos(alpha);
+
+    cv::Mat mapC=H1*robotState.robotPositionCovariance*H1.t()+H2*singleFeature.featureCovariance*H2.t();
+    cv::Mat robot_mapCovariance=robotState.robotPositionCovariance*H1.t();
+    cv::Mat map_robotCovariance=H1*robotState.robotPositionCovariance;
+
+    //P=[  R  RM; MR M]
+    //R
+    cv::Mat temp=extendMapC(cv::Rect(0,0,robotCombinedCovariance.cols,robotCombinedCovariance.rows));
+    robotCombinedCovariance.copyTo(temp);
+    //M
+    temp=extendMapC(cv::Rect(robotCombinedCovariance.cols,robotCombinedCovariance.rows,mapC.cols,mapC.rows));
+    mapC.copyTo(temp);
+    //RM
+    temp=extendMapC(cv::Rect(robotCombinedCovariance.cols,0,robot_mapCovariance.cols,robot_mapCovariance.rows));
+    robot_mapCovariance.copyTo(temp);
+    //MR
+    temp=extendMapC(cv::Rect(0,robotCombinedCovariance.rows,map_robotCovariance.cols,map_robotCovariance.rows));
+    map_robotCovariance.copyTo(temp);
+
+    //mean
+    robotCombinedState=extendMap.clone();
+    robotState.robotPositionMean.ptr<double>(0)[0]=robotCombinedState.ptr<double>(0)[0];
+    robotState.robotPositionMean.ptr<double>(1)[0]=robotCombinedState.ptr<double>(1)[0];
+    robotState.robotPositionMean.ptr<double>(2)[0]=robotCombinedState.ptr<double>(2)[0];
+
+    robotCombinedCovariance=extendMapC.clone();
+
+    for(int i=0;i!=STATE_SIZE;++i)
+       for(int j=0;j!=STATE_SIZE;++j)
+            robotState.robotPositionCovariance.ptr<double>(i)[j]=robotCombinedCovariance.ptr<double>(i)[j];
+
+
+    landmarkSets.push_back(worldFeature);
+
+
+    //cout<<robotCombinedCovariance<<endl;
+
+ //  cv::imshow("23",robotCombinedCovariance*1000);
+  // cv::waitKey(1);
+    //cout<<"======================="<<endl;
+}
+
+void lab405::MyEFKSLAM::FeatureSelection(const std::vector<Feature> &obsFeatureSets, std::vector<Feature> &landmark)
+{
+    landmark.clear();
+    landmark.reserve(obsFeatureSets.size());
+    //
+
+    vector<bool> matchFlag;  //true: match  §PÂ_obs¯S¼x¬O§_³Qmatch¨ì ¦pªG¨S¦³³Qmatch¨ì«hµø¬°²Ä¤@¦¸µo²{
+    matchFlag.reserve(obsFeatureSets.size());
+
+
+    for(int i=0;i!=obsFeatureSets.size();++i)
+    {
+        Feature obsglobalFeature;
+        ConvertRobotToWorld(obsFeatureSets[i],robotState,obsglobalFeature);
+
+        std::list<Feature>::const_iterator j=candidateFeatureSets.begin();
+        std::list<int>::iterator k=candidateWeighting.begin();
+
+        bool match=false;
+        for(int count=0;count!=candidateFeatureSets.size();++count)
+        {
+            if(obsglobalFeature.GetFeatureType()!=j->GetFeatureType())
+                continue;
+
+            double distance=_EuclideanDistance(obsglobalFeature,*j);
+
+
+            if(distance<newFeatureRadius)
+            {
+                //cout<<"²Ä"<<i<<"­Ó¯S¼x_»P²Ä"<<count<<"  "<<(*j).featureMean<<"­Ó­Ô¿ï¤H_¤À¼Æ"<<distance<<endl;
+
+                *k=*k+1;  //­p¼Æ+1
+                match=true;
+               //­n«ä¦Ò§ä¨ì¤@­Ó¬O§_Ä~ÄòÅýfor¶]§¹
+            }
+
+            j++;
+            k++;  //«ü¼Ð»¼¼W
+
+        }
+
+
+        //check landmark set ¬O§_¦³¤@¼Ëªº¯S¼x
+        /////////////////////////////////
+
+        for(int k=0;k!=landmarkSets.size();++k)
+        {
+            if(obsglobalFeature.GetFeatureType()!=landmarkSets[k].GetFeatureType())
+                continue;
+
+
+            double distance=_EuclideanDistance(obsglobalFeature,landmarkSets[k]);
+
+            if(distance<(newFeatureRadius)*5)
+            {
+                 match=true;
+
+            }
+
+        }
+
+
+         ////////////////////////////////
+
+        //§PÂ_obs¯S¼x¬O§_³Qmatch¨ì ¦pªG¨S¦³³Qmatch¨ì«hµø¬°²Ä¤@¦¸µo²{
+        matchFlag.push_back(match);
+    }
+
+
+    /*
+    cout<<"add  matcher==========="<<endl;
+    for(int i=0;i!=matchFlag.size();++i)
+        cout<<matchFlag[i]<<endl;
+    cout<<"add  matcher==========="<<endl;
+
+*/
+
+
+    std::list<Feature>::iterator i=candidateFeatureSets.begin();
+    std::list<int>::iterator j;
+
+    for(j=candidateWeighting.begin();j!=candidateWeighting.end();)
+    {
+
+
+        if(*j>=weighting&&j!=candidateWeighting.end()&&i!=candidateFeatureSets.end())
+        {
+            landmark.push_back(*i);
+            j=candidateWeighting.erase(j);
+            i=candidateFeatureSets.erase(i);
+        }
+        else
+        {
+            ++j;
+            ++i;
+        }
+
+
+    }
+
+
+/*
+    for(int c=0;c!=candidateWeighting.size();++c)
+    {
+
+
+        if(*j>=weighting&& j!=candidateWeighting.end()&&i!=candidateFeatureSets.end())
+        {
+            landmark.push_back(*i);
+            candidateWeighting.erase(j);
+            candidateFeatureSets.erase(i);
+        }
+
+
+    }
+
+*/
+        //²Ä¤@¦¸µo²{ªº¯S¼x
+        for(int i=0;i!=matchFlag.size();++i)
+        {
+            if(matchFlag[i]==false)
+            {
+
+                Feature obsglobalFeature;
+                ConvertRobotToWorld(obsFeatureSets[i],robotState,obsglobalFeature);
+
+                candidateFeatureSets.push_back(obsglobalFeature);
+                candidateWeighting.push_back(1);
+
+
+            }
+        }
+
+}
+
+double lab405::MyEFKSLAM::_EuclideanDistance(const Feature &obsFeautureW, const Feature &candFeautureW)
+{
+    // Polar to Cartesian
+    cv::Point2d obsXY;
+    cv::Point2d candXY;
+    PolarToCartesian(cv::Point2d(obsFeautureW.featureMean.ptr<double>(0)[0],obsFeautureW.featureMean.ptr<double>(1)[0]),obsXY);
+    PolarToCartesian(cv::Point2d(candFeautureW.featureMean.ptr<double>(0)[0],candFeautureW.featureMean.ptr<double>(1)[0]),candXY);
+
+    return sqrt((obsXY.x-candXY.x)*(obsXY.x-candXY.x)+(obsXY.y-candXY.y)*(obsXY.y-candXY.y));
+}
+
+void lab405::MyEFKSLAM::MapInitial(const std::vector<std::vector<Line> > &lineFeature)
+{
+    LandmarkMapping mapper;
+
+    cv::Mat imgg(500,500,CV_8UC3);
+    imgg=cv::Scalar::all(0);
+    cv::circle(imgg, cv::Point(0+250,0+250), 3, cv::Scalar(255,0,255), 1 );
+    //the line features of n scans
+    for(int i=0;i!=lineFeature.size();++i)
+    {
+        vector<Feature> obs;
+        vector<Feature> map;
+        obs.clear();
+        obs.reserve(lineFeature[i].size());
+
+        for(int j=0;j!=lineFeature[i].size();++j)
+        {
+            // convert line feature to normal feature
+            Feature temp;
+            temp.featureMean=lineFeature[i][j].lineMean.clone();
+            temp.featureCovariance=lineFeature[i][j].lineCovariance.clone();
+            temp.SetFeatureType(Line_Feature);
+            obs.push_back(temp);
+
+
+            // convert feature to world space
+            Feature temp11;
+
+
+            ConvertRobotToWorld(temp,robotState,temp11);
+
+           // mapper.DrawLine(temp11,RobotState(),cv::Scalar(255,0,0),10,cv::Point2d(250,250),1,imgg);
+
+
+        }
+
+        FeatureSelection(obs, map);
+        cout<<"²Ä´X­Óloop:"<<i<<" µo²{´X­Ó¯S¼x:"<<map.size()<<endl;
+
+        if(map.size()>0)
+        {
+
+            for(int u=0;u!=map.size();++u)
+            {
+
+                Feature localTemp;
+
+                RobotState test;
+
+
+
+                ConvertWorldToRobot(map[u],robotState,localTemp);
+
+             //   mapper.DrawLine(localTemp,RobotState(),cv::Scalar(0,255,0),3,cv::Point2d(250,250),1,imgg);
+
+
+
+                cout<<"²Ä"<<u<<"­Ó¯S¼x"<<endl;
+                cout<<"¥[¤J«e"<<endl;
+                cout<<"¾÷¾¹¤H¦ì¸m"<<robotCombinedState<<endl;
+                cout<<"¾÷¾¹¤H¦@ÅÜ²§¾ð¯x°}"<<robotCombinedCovariance<<endl;
+
+                AddNewLandmark(localTemp);
+
+                cout<<"¥[¤J«á"<<endl;
+                cout<<"¾÷¾¹¤H¦ì¸m"<<robotCombinedState<<endl;
+                cout<<"¾÷¾¹¤H¦@ÅÜ²§¾ð¯x°}"<<robotCombinedCovariance<<endl;
+
+                //cv::Point2d obsXY;
+                ////PolarToCartesian(cv::Point2d(map[u].featureMean.ptr<double>(0)[0],map[u].featureMean.ptr<double>(1)[0]),obsXY);
+                //obsXY.x=obsXY.x/100.0*(1/0.15);
+                //obsXY.y=obsXY.y/100.0*(1/0.15);
+                //cv::circle(imgg, cv::Point(obsXY.x+250,obsXY.y+250), (i), cv::Scalar(255,255,0), -1  );
+
+
+            }
+
+        }
+
+    }
+
+    cv::imshow("123",imgg);
+    cv::waitKey(1);
+
+    cout<<"ªì©l¤Æ§ä¨ìªº¯S¼x¼Æ¥Ø:"<<landmarkNum<<" "<<landmarkSets.size()<<endl;
+}
+
+void lab405::MyEFKSLAM::SetRobotPose(const RobotState &robot)
+{
+    robotState.robotPositionMean=robot.robotPositionMean.clone();
+    robotCombinedState.ptr<double>(0)[0]=robot.robotPositionMean.ptr<double>(0)[0];
+    robotCombinedState.ptr<double>(1)[0]=robot.robotPositionMean.ptr<double>(1)[0];
+    robotCombinedState.ptr<double>(2)[0]=robot.robotPositionMean.ptr<double>(2)[0];
+}
+
+void lab405::MyEFKSLAM::SetMotionCommand()
+{
+    double value = 0;
+    int velocity = this->GetVelocity();
+    //RightMotor,LeftMotor);
+
+//    if(checkBit!=true)
+//    {
+
+//        SLAM_Robot->rightMotor->Stop();
+//        SLAM_Robot->leftMotor->Stop();
+//        return;
+
+//    }
+
+
+    if(!this->commandSets.empty())
+    {
+//        collector->SetCommandFlag(true);
+       // cout<<"!!"<<commandSets.front().second<<endl;
+        if(this->commandSets.front().first==1)
+        {
+
+            //SLAM_Robot->rightMotor->SetVelocity(0);
+            //SLAM_Robot->leftMotor->SetVelocity(0);
+          //  commandSets.front().second
+            //[encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:325]
+            value = (4096*3.333*14)*(this->commandSets.front().second/32.5)/(CV_PI);
+            std::cout << "forward: " << value << std::endl;
+            this->myrobot->left_dcmotor->SetVelocity(velocity);
+            this->myrobot->right_dcmotor->SetVelocity(-velocity);
+
+
+
+        }
+        else
+        {
+            double arc=2*CV_PI*this->GetRobotWidth()*(this->commandSets.front().second/360.0);
+             //double arc=2*CV_PI*SLAM_Robot->GetRobotWidth()*((SLAM_Robot->commandSets.front().second*30.0/45.0)/360.0);
+            // cout<<angle<<endl;
+            value=(4096*3.333*14)*(arc/32.5)/(CV_PI);
+
+            if(this->commandSets.front().first==2) //right
+            {
+                //SLAM_Robot->rightMotor->SetVelocity(-velocity);
+                this->myrobot->right_dcmotor->SetVelocity(-30);
+                this->myrobot->left_dcmotor->SetVelocity(0);
+
+            }
+            else if(this->commandSets.front().first==3) //left
+            {
+                this->myrobot->right_dcmotor->SetVelocity(0);
+                //SLAM_Robot->leftMotor->SetVelocity(velocity);
+                this->myrobot->left_dcmotor->SetVelocity(30);
+
+            }
+            value = abs(value); //test
+            std::cout << "angle: " << value << std::endl;
+
+        }
+//        ui->textBrowser_2->setFontWeight( QFont::DemiBold );
+//        ui->textBrowser_2->setTextColor( QColor( "red" ) );
+//        ui->textBrowser_2->append("mode:"+QString::number(SLAM_Robot->commandSets.front().first)+ " value:"+QString::number(SLAM_Robot->commandSets.front().second));
+
+
+        this->commandSets.front().second=value;
+//        collector->SetMotionCommand(this->commandSets.front().first,SLAM_Robot->commandSets.front().second);
+        this->commandSets.pop();
+
+    }
+    else
+    {
+//        collector->SetCommandFlag(false);
+        this->myrobot->right_dcmotor->Stop();
+        this->myrobot->left_dcmotor->Stop();
+    }
+}
+
+void lab405::MyEFKSLAM::SetMotionCommand2(int type, double value)
+{
+    motionType=type;
+
+    if(type==1||type==2)
+        rightCommand+=value;
+
+    if(type==1||type==3)
+        leftCommand+=value;
+}
+
 
 void lab405::MyEFKSLAM::PathSmoothing()
 {
@@ -996,7 +1828,3 @@ void lab405::MyEFKSLAM::FindCurrentNodeEnd(const cv::Mat &gridMap, double interv
     currentEnd.y=nodeTemp.y;
 }
 
-lab405::MyEFKSLAM::~MyEFKSLAM()
-{
-
-}

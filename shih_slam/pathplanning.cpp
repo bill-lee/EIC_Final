@@ -41,6 +41,8 @@ void PathPlanning::AStartPlanning(std::vector<cv::Point2d> &pathSets)
   ///////////////
     CvMatSearchNode::gridMapN=pathPlanningMap.clone();
 
+    std::cout << "nodeStart.x = " << nodeStart.x << ", " << "nodeStart.y = " << nodeStart.y << std::endl;
+    std::cout << "nodeEnd.x = " << nodeEnd.x << ", " << "nodeEnd.y = " << nodeEnd.y << std::endl;
     astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
 
     unsigned int SearchState;
@@ -55,9 +57,12 @@ void PathPlanning::AStartPlanning(std::vector<cv::Point2d> &pathSets)
     }
     while( SearchState == AStarSearch<CvMatSearchNode>::SEARCH_STATE_SEARCHING ); //判斷是否做完路徑規畫
 
+    std::cout << "SearchSteps = " << SearchSteps << std::endl;
+
     if( SearchState == AStarSearch<CvMatSearchNode>::SEARCH_STATE_SUCCEEDED )
     {
-       // cout << "Search found goal state\n";
+        std::cout << "Search found goal state" << std::endl;
+        // cout << "Search found goal state\n";
         CvMatSearchNode *node = astarsearch.GetSolutionStart();
 
         int steps = 0;
@@ -91,8 +96,7 @@ void PathPlanning::AStartPlanning(std::vector<cv::Point2d> &pathSets)
     }
     else if( SearchState == AStarSearch<CvMatSearchNode>::SEARCH_STATE_FAILED )
     {
-            //cout << "Search terminated. Did not find goal state\n";
-
+        std::cout << "Search terminated. Did not find goal state" << std::endl;
     }
 
     astarsearch.EnsureMemoryFreed();

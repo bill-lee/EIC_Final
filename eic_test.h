@@ -173,6 +173,8 @@ private slots:
 
     void on_pushButton_23_clicked();
 
+    void on_pushButton_24_clicked();
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;
@@ -214,6 +216,8 @@ private:
     bool paused;    // for detect people
 
     QThread *Robot_Thread;
+
+    void FindCurrentNodeEnd(const cv::Mat &gridMap,double intervalDistance, const cv::Point2d &currentStart,const cv::Point2d &goal ,cv::Point2d& currentEnd);
 
 
 signals:

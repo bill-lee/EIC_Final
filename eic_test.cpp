@@ -6,8 +6,7 @@ EIC_Test::EIC_Test(QWidget *parent) :
     ui(new Ui::EIC_Test),
     myekfslam(new lab405::MyEFKSLAM()),
 //    myrobot(new lab405::MyRobot()),
-    sensorsetup(new SensorSetup()),
-    testEKFTimer(new QTimer)
+    sensorsetup(new SensorSetup())
 {
     Robot_Thread = new QThread(this);
     myekfslam->myrobot->moveToThread(Robot_Thread);
@@ -97,12 +96,12 @@ EIC_Test::EIC_Test(QWidget *parent) :
     ui->pushButton_19->setVisible(false);
 
     // shih ekf slam connect
-    connect(testEKFTimer, SIGNAL(timeout()), this, SLOT(EKF_Timer()));
+//    connect(testEKFTimer, SIGNAL(timeout()), this, SLOT(EKF_Timer()));
 
     //data collect thread
-    collector=new DataGrabThread;
-    connect(collector,SIGNAL(sendOdemtryLaserData(const int ,const int ,const std::vector<double>)),this,SLOT(setOdometryLaserData(const int ,const int ,const std::vector<double>)));
-    connect(collector,SIGNAL(sendCommandAccomplishment()),this,SLOT(SetMotionCommand()));
+//    collector=new DataGrabThread;
+//    connect(collector,SIGNAL(sendOdemtryLaserData(const int ,const int ,const std::vector<double>)),this,SLOT(setOdometryLaserData(const int ,const int ,const std::vector<double>)));
+//    connect(collector,SIGNAL(sendCommandAccomplishment()),this,SLOT(SetMotionCommand()));
 
 //    SLAM_Robot = new Shih_MyRobot;
     myekfslam->myrobot = new lab405::MyRobot;
@@ -580,6 +579,51 @@ void EIC_Test::CreateMenus()
 
     sensorMenu = menuBar()->addMenu(tr("&Sensor"));
     sensorMenu->addAction(setupAct);
+}
+
+void EIC_Test::FindCurrentNodeEnd(const cv::Mat &gridMap, double intervalDistance, const cv::Point2d &currentStart, const cv::Point2d &goal, cv::Point2d &currentEnd)
+{
+    double min=10000;
+    cv::Point2d nodeTemp;
+
+    nodeTemp.x=currentStart.x+10;
+    nodeTemp.y=currentStart.y;
+
+    cout<<"currentStart"<<currentStart<<" "<<gridMap.cols<<gridMap.rows<<endl;
+    cout<<"FinalEnd"<<goal.x<<" "<<goal.y<<endl;
+    int box_size=intervalDistance;  //128 pixels, each pixel*gridsize
+     ///////////// picture oversize constraint
+     for(int i=0;i!=(box_size+1);++i)
+         for(int j=-box_size;j!=(box_size+1);++j)
+         {
+             int x=i+currentStart.x;
+             int y=j+currentStart.y;
+
+
+             double temp=gridMap.ptr<uchar>(y)[x];
+             if(temp==253)  //1:occ 127:unknow 253:free
+             {
+
+                 double suby=abs((double)goal.y-y);
+                 double subx=abs((double)goal.x-x);
+                 double r=sqrt(pow(subx,2.0)+pow(suby,2.0));
+                   //cout<<r<<" "<<subx<<" "<<suby<<endl;
+                 if(min>r)
+                 {
+
+
+                     nodeTemp.x=x;
+                     nodeTemp.y=y;
+                     min=r;
+                 }
+
+             }
+
+         }
+  //  return cv::Point2d(nodeTemp.x,nodeTemp.y);
+
+    currentEnd.x=nodeTemp.x;
+    currentEnd.y=nodeTemp.y;
 }
 
 
@@ -1521,438 +1565,438 @@ void EIC_Test::on_pushButton_SLAM_resetcount_clicked()
 
 void EIC_Test::on_pushButton_slam_EKFslam_clicked()
 {
-    myekfslam->myrobot->laser_slam->DisconnectReadyRead();
-    myekfslam->myrobot->right_dcmotor->SetHome();
-    myekfslam->myrobot->left_dcmotor->SetHome();
-    collector->SetMotorPointer(myekfslam->myrobot->right_dcmotor, myekfslam->myrobot->left_dcmotor);
-    collector->SetLaserPointer(myekfslam->myrobot->laser_slam);
-    connect(collector, SIGNAL(GetRightPoseSignal()), myekfslam->myrobot->right_dcmotor, SLOT(GetPose()));
-    connect(collector, SIGNAL(GetLeftPoseSignal()), myekfslam->myrobot->left_dcmotor, SLOT(GetPose()));
-    connect(collector, SIGNAL(TriggerLaserSignal()), myekfslam->myrobot->laser_slam, SLOT(TriggerLaser()));
-    // shih's EKF slam
-    // EKFtimer flag
-    checkBit = true;
-    motionMode = false;
-    sceneCnt = 0;
-    saveFileIndex = 0;
-    // number of scenes
-    sceneNum = ui->spinBox_slam_sceneNum->value();
-    gridDistance = abs(ui->spinBox_slam_x->value() - ui->spinBox_slam_x0->value())/(sceneNum - 1);
-    gridDistance = gridDistance*myekfslam->gridMapper.GetPixel_meterFactor()*100;
-    std::cout << "gridDistance:" << gridDistance << std::endl;
+//    myekfslam->myrobot->laser_slam->DisconnectReadyRead();
+//    myekfslam->myrobot->right_dcmotor->SetHome();
+//    myekfslam->myrobot->left_dcmotor->SetHome();
+//    collector->SetMotorPointer(myekfslam->myrobot->right_dcmotor, myekfslam->myrobot->left_dcmotor);
+//    collector->SetLaserPointer(myekfslam->myrobot->laser_slam);
+//    connect(collector, SIGNAL(GetRightPoseSignal()), myekfslam->myrobot->right_dcmotor, SLOT(GetPose()));
+//    connect(collector, SIGNAL(GetLeftPoseSignal()), myekfslam->myrobot->left_dcmotor, SLOT(GetPose()));
+//    connect(collector, SIGNAL(TriggerLaserSignal()), myekfslam->myrobot->laser_slam, SLOT(TriggerLaser()));
+//    // shih's EKF slam
+//    // EKFtimer flag
+//    checkBit = true;
+//    motionMode = false;
+//    sceneCnt = 0;
+//    saveFileIndex = 0;
+//    // number of scenes
+//    sceneNum = ui->spinBox_slam_sceneNum->value();
+//    gridDistance = abs(ui->spinBox_slam_x->value() - ui->spinBox_slam_x0->value())/(sceneNum - 1);
+//    gridDistance = gridDistance*myekfslam->gridMapper.GetPixel_meterFactor()*100;
+//    std::cout << "gridDistance:" << gridDistance << std::endl;
 
-    // intial motor
-    myekfslam->myrobot->left_dcmotor->SetHome();
-    myekfslam->myrobot->right_dcmotor->SetHome();
-    myekfslam->refenceMap.clear();
-    // SLAM_Robot->lineExtracter.SetDistanceThreshold(20);
-    vector<vector<Line> > lines;
-
-
-    robotOutputFile.open("20150503_EKF_odoFile.txt");
-    laserOutputFile.open("20150503_EKF_laserFile.txt");
-    robotSceneFile.open("20150503_EKF_sceneData.txt");
-
-    if(!robotOutputFile.is_open()||!laserOutputFile.is_open()||!robotSceneFile.is_open())
-    {
-        QMessageBox::information(this,"Error","Can't open file");
-    }
-
-//    qRegisterMetaType<boost::shared_ptr<QByteArray>> ("boost::shared_ptr<QByteArray>");
-//    connect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
-//            myrobot, SLOT(ProcessSingleTriggerSLAM(boost::shared_ptr<QByteArray>)));
+//    // intial motor
+//    myekfslam->myrobot->left_dcmotor->SetHome();
+//    myekfslam->myrobot->right_dcmotor->SetHome();
+//    myekfslam->refenceMap.clear();
+//    // SLAM_Robot->lineExtracter.SetDistanceThreshold(20);
+//    vector<vector<Line> > lines;
 
 
-    CornerExtraction cornerEx;
-    // repeat features
-    for(int i = 0; i != 4; ++i)  // 6
-    {
-        vector<double> temp;
-        std::vector<cv::Point2d> temp1;
-        std::vector<Line> temp2;
-        std::vector<Corner> cor;
-        // triiger one scan
+//    robotOutputFile.open("20150503_EKF_odoFile.txt");
+//    laserOutputFile.open("20150503_EKF_laserFile.txt");
+//    robotSceneFile.open("20150503_EKF_sceneData.txt");
 
-        myekfslam->myrobot->laser_slam->TriggerLaser();
-        while(myekfslam->myrobot->laser_slam->waitForReadyRead(400))
-        {
-        }
+//    if(!robotOutputFile.is_open()||!laserOutputFile.is_open()||!robotSceneFile.is_open())
+//    {
+//        QMessageBox::information(this,"Error","Can't open file");
+//    }
 
-        myekfslam->myrobot->laser_slam->ReadData(temp);
-//        std::cout << "temp size = " << temp.size() << std::endl;
-//        for (int j = 0; j < temp.size(); j++)
+////    qRegisterMetaType<boost::shared_ptr<QByteArray>> ("boost::shared_ptr<QByteArray>");
+////    connect(myrobot->laser_slam, SIGNAL(GetOneLaserScan(boost::shared_ptr<QByteArray>)),
+////            myrobot, SLOT(ProcessSingleTriggerSLAM(boost::shared_ptr<QByteArray>)));
+
+
+//    CornerExtraction cornerEx;
+//    // repeat features
+//    for(int i = 0; i != 4; ++i)  // 6
+//    {
+//        vector<double> temp;
+//        std::vector<cv::Point2d> temp1;
+//        std::vector<Line> temp2;
+//        std::vector<Corner> cor;
+//        // triiger one scan
+
+//        myekfslam->myrobot->laser_slam->TriggerLaser();
+//        while(myekfslam->myrobot->laser_slam->waitForReadyRead(400))
 //        {
-//            std::cout << temp.at(j) << " ";
 //        }
-//        std::cout <<std::endl;
 
-//        SLAM_Robot->laserS200->ReadData(temp);
-        if(temp.size()==0||i==0)
-            continue;
-        myekfslam->mapper.RangesDataToPointsData(temp, temp1);
+//        myekfslam->myrobot->laser_slam->ReadData(temp);
+////        std::cout << "temp size = " << temp.size() << std::endl;
+////        for (int j = 0; j < temp.size(); j++)
+////        {
+////            std::cout << temp.at(j) << " ";
+////        }
+////        std::cout <<std::endl;
 
-        myekfslam->lineExtracter.SplitAndMerge(temp1, temp2);
-        cornerEx.ExtractCorners(temp,cor);
+////        SLAM_Robot->laserS200->ReadData(temp);
+//        if(temp.size()==0||i==0)
+//            continue;
+//        myekfslam->mapper.RangesDataToPointsData(temp, temp1);
 
-        std::cout << "laser points:" << temp.size() << "  line num:" << temp2.size() << "  cor num:" << cor.size() << std::endl;
-        cv::Mat img = myekfslam->mapper.GetLocalLandmarkMap(temp1,temp2,vector<Corner>());
+//        myekfslam->lineExtracter.SplitAndMerge(temp1, temp2);
+//        cornerEx.ExtractCorners(temp,cor);
 
-        cv::Mat img1 = myekfslam->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),vector<Corner>());
-        cv::Mat img2 = myekfslam->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),cor);
+//        std::cout << "laser points:" << temp.size() << "  line num:" << temp2.size() << "  cor num:" << cor.size() << std::endl;
+//        cv::Mat img = myekfslam->mapper.GetLocalLandmarkMap(temp1,temp2,vector<Corner>());
 
-
-        lines.push_back(temp2);
-        myekfslam->gridMapper.InsertLocalGridMap(temp, cv::Point3d(0,0,0));
-
-        //////////////////////////////////////////////
-        //save file
-        saveFileIndex++;
-        robotOutputFile << 0 << " " << 0 << endl;  //encoder
-        for(int i = 0; i != temp.size(); ++i)
-            laserOutputFile << temp[i] << " ";
-
-        laserOutputFile << endl;
+//        cv::Mat img1 = myekfslam->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),vector<Corner>());
+//        cv::Mat img2 = myekfslam->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),cor);
 
 
-        //////////////////////////////////////////////
-        //for(int i=0;i!=temp.size();++i)
-        // {
-        //  if(temp[i]<=2996)
-        //      cout<<temp[i]<<endl;
-        //}
+//        lines.push_back(temp2);
+//        myekfslam->gridMapper.InsertLocalGridMap(temp, cv::Point3d(0,0,0));
 
-        //  cv::Mat tt;
-        // SLAM_Robot->gridMapper.GetLocalGridMap(temp,tt);
-        // cv::imshow("tt",tt);
-        cv::imshow("1341",img);
-        cv::imshow("13411",img1);
-        cv::imshow("13411222 ",cornerEx.cornerImg);
-        while(cv::waitKey(10) == 27)
-        {
+//        //////////////////////////////////////////////
+//        //save file
+//        saveFileIndex++;
+//        robotOutputFile << 0 << " " << 0 << endl;  //encoder
+//        for(int i = 0; i != temp.size(); ++i)
+//            laserOutputFile << temp[i] << " ";
 
-        }
-    }
-
-    myekfslam->EKFRuner.Initial(lines);
-    std::cout << "EKF Intial" <<endl;
-    myekfslam->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
-    myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
-    myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
-    //set start end points
-    myekfslam->currentStart.x = myekfslam->gridMapper.GetGridMapOriginalPoint().x;
-    myekfslam->currentStart.y = myekfslam->gridMapper.GetGridMapOriginalPoint().y;
-
-    myekfslam->FinalEnd.x = myekfslam->gridMapper.GetGridMapOriginalPoint().x + 200;
-    myekfslam->FinalEnd.y = myekfslam->gridMapper.GetGridMapOriginalPoint().y;
+//        laserOutputFile << endl;
 
 
-    myekfslam->currentEnd.x = ui->spinBox_slam_x->value();
-    myekfslam->currentEnd.y = ui->spinBox_slam_y->value();
+//        //////////////////////////////////////////////
+//        //for(int i=0;i!=temp.size();++i)
+//        // {
+//        //  if(temp[i]<=2996)
+//        //      cout<<temp[i]<<endl;
+//        //}
 
-    testEKFTimer->start(1500);
-    readFlag = true;
-    collector->start();
+//        //  cv::Mat tt;
+//        // SLAM_Robot->gridMapper.GetLocalGridMap(temp,tt);
+//        // cv::imshow("tt",tt);
+//        cv::imshow("1341",img);
+//        cv::imshow("13411",img1);
+//        cv::imshow("13411222 ",cornerEx.cornerImg);
+//        while(cv::waitKey(10) == 27)
+//        {
 
-    cv::destroyAllWindows();
+//        }
+//    }
+
+//    myekfslam->MapInitial(lines);
+//    std::cout << "EKF Intial" <<endl;
+//    myekfslam->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
+//    myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+//    myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+//    //set start end points
+//    myekfslam->currentStart.x = myekfslam->gridMapper.GetGridMapOriginalPoint().x;
+//    myekfslam->currentStart.y = myekfslam->gridMapper.GetGridMapOriginalPoint().y;
+
+//    myekfslam->FinalEnd.x = myekfslam->gridMapper.GetGridMapOriginalPoint().x + 200;
+//    myekfslam->FinalEnd.y = myekfslam->gridMapper.GetGridMapOriginalPoint().y;
+
+
+//    myekfslam->currentEnd.x = ui->spinBox_slam_x->value();
+//    myekfslam->currentEnd.y = ui->spinBox_slam_y->value();
+
+//    testEKFTimer->start(1500);
+//    readFlag = true;
+//    collector->start();
+
+//    cv::destroyAllWindows();
 
 }
 
 void EIC_Test::EKF_Timer()
 {
-    if(checkBit != true)
-    {
+//    if(checkBit != true)
+//    {
 
-        myekfslam->myrobot->right_dcmotor->Stop();
-        myekfslam->myrobot->left_dcmotor->Stop();
-        return;
+//        myekfslam->myrobot->right_dcmotor->Stop();
+//        myekfslam->myrobot->left_dcmotor->Stop();
+//        return;
 
-    }
+//    }
 
-    clock_t startTime=clock();
-    //img=cv::Scalar::all(0);
+//    clock_t startTime=clock();
+//    //img=cv::Scalar::all(0);
 
-    saveFileIndex++;
-    readFlag=true;
-    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.x)*32.5*CV_PI)/(4096*14.0*3.33333));
-    double DeltaLeft=((double)((odoValueCurrent.y-odoValuePrevious.y)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    saveFileIndex++;
+//    readFlag=true;
+//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.x)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaLeft=((double)((odoValueCurrent.y-odoValuePrevious.y)*32.5*CV_PI)/(4096*14.0*3.33333));
 
 
 
-    ui->textBrowser->setFontWeight( QFont::Normal );
-    ui->textBrowser->setTextColor( QColor( "blue" ) );
-    ui->textBrowser->append("[encoder]:("+QString::number(DeltaRight)+","+QString::number(DeltaLeft)+")");
-    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<odoValuePrevious.x<<" , "<<odoValuePrevious.y<<endl;
-    cout<<"3:"<<DeltaRight<<" "<<DeltaLeft<<" time:"<<endl;
+//    ui->textBrowser->setFontWeight( QFont::Normal );
+//    ui->textBrowser->setTextColor( QColor( "blue" ) );
+//    ui->textBrowser->append("[encoder]:("+QString::number(DeltaRight)+","+QString::number(DeltaLeft)+")");
+//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<odoValuePrevious.x<<" , "<<odoValuePrevious.y<<endl;
+//    cout<<"3:"<<DeltaRight<<" "<<DeltaLeft<<" time:"<<endl;
 
-    odoValuePrevious.x=odoValueCurrent.x;
-    odoValuePrevious.y=odoValueCurrent.y;
+//    odoValuePrevious.x=odoValueCurrent.x;
+//    odoValuePrevious.y=odoValueCurrent.y;
 
-    std::vector<cv::Point2d> points;
-    std::vector<Line> line;
-    std::vector<Corner> cor;
+//    std::vector<cv::Point2d> points;
+//    std::vector<Line> line;
+//    std::vector<Corner> cor;
 
-    ////////////////////////////////////////////////////////////////////////
-    //feature extraction
-    myekfslam->mapper.RangesDataToPointsData(myekfslam->rawLaserScanData,points);
-    myekfslam->lineExtracter.SplitAndMerge(points,line);
+//    ////////////////////////////////////////////////////////////////////////
+//    //feature extraction
+//    myekfslam->mapper.RangesDataToPointsData(myekfslam->rawLaserScanData,points);
+//    myekfslam->lineExtracter.SplitAndMerge(points,line);
 
-    ////////////////////////////////////////////////////////////////////////
-    //motion estimation
-    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
-    myekfslam->EKFRuner.MotionPrediction(cv::Point2d(DeltaLeft,DeltaRight));
+//    ////////////////////////////////////////////////////////////////////////
+//    //motion estimation
+//    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
+//    myekfslam->EKFRuner.MotionPrediction(cv::Point2d(DeltaLeft,DeltaRight));
 
-    //SLAM_Robot->gridMapper.InsertLocalGridMap();
+//    //SLAM_Robot->gridMapper.InsertLocalGridMap();
 
-    myekfslam->EKFRuner.DataAssociation(line,cor);
-    myekfslam->robotPosition=myekfslam->EKFRuner.GetRobotPose();
+//    myekfslam->EKFRuner.DataAssociation(line,cor);
+//    myekfslam->robotPosition=myekfslam->EKFRuner.GetRobotPose();
 
 
 
-    // QMessageBox::information(this, "Error!", "ok1!");
+//    // QMessageBox::information(this, "Error!", "ok1!");
 
-    ////////////////////////////////////////////////////////////////////////
-    //ICP correction
-    vector<cv::Point2d> temp;
-    dataConvertRobotToWorld(points,myekfslam->robotPosition,temp);
+//    ////////////////////////////////////////////////////////////////////////
+//    //ICP correction
+//    vector<cv::Point2d> temp;
+//    dataConvertRobotToWorld(points,myekfslam->robotPosition,temp);
 
-    double percent=0.5;
-    //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
-    cv::Point3d adjustPose;
-    adjustPose.x=0;
-    adjustPose.y=0;
-    adjustPose.z=0;
-    ////////////////////////////////////////////////////////////////////////
-    //­×¥¿«áªº¾÷¾¹¤H¦ì¸m
+//    double percent=0.5;
+//    //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
+//    cv::Point3d adjustPose;
+//    adjustPose.x=0;
+//    adjustPose.y=0;
+//    adjustPose.z=0;
+//    ////////////////////////////////////////////////////////////////////////
+//    //­×¥¿«áªº¾÷¾¹¤H¦ì¸m
 
-    RobotState robotpath1;
+//    RobotState robotpath1;
 
-    robotpath1.robotPositionMean.ptr<double>(0)[0]=adjustPose.x+myekfslam->robotPosition.robotPositionMean.ptr<double>(0)[0];
-    robotpath1.robotPositionMean.ptr<double>(1)[0]=adjustPose.y+myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0];
-    robotpath1.robotPositionMean.ptr<double>(2)[0]=adjustPose.z+myekfslam->robotPosition.robotPositionMean.ptr<double>(2)[0];
-    robotpath1.robotPositionCovariance=myekfslam->robotPosition.robotPositionCovariance.clone();
+//    robotpath1.robotPositionMean.ptr<double>(0)[0]=adjustPose.x+myekfslam->robotPosition.robotPositionMean.ptr<double>(0)[0];
+//    robotpath1.robotPositionMean.ptr<double>(1)[0]=adjustPose.y+myekfslam->robotPosition.robotPositionMean.ptr<double>(1)[0];
+//    robotpath1.robotPositionMean.ptr<double>(2)[0]=adjustPose.z+myekfslam->robotPosition.robotPositionMean.ptr<double>(2)[0];
+//    robotpath1.robotPositionCovariance=myekfslam->robotPosition.robotPositionCovariance.clone();
 
-    //xyz¹ê»Ú§ë¼v¦Ü¥­­±ªü
-    cv::Point2d imagePose=myekfslam->gridMapper.GetRobotCenter(robotpath1);
+//    //xyz¹ê»Ú§ë¼v¦Ü¥­­±ªü
+//    cv::Point2d imagePose=myekfslam->gridMapper.GetRobotCenter(robotpath1);
 
-    myekfslam->currentStart.x=imagePose.x;
-    myekfslam->currentStart.y=imagePose.y;
+//    myekfslam->currentStart.x=imagePose.x;
+//    myekfslam->currentStart.y=imagePose.y;
 
-    myekfslam->EKFRuner.SetRobotPose(robotpath1);
-    ///////////////////////////////////// ///////////////////////////////////
+//    myekfslam->EKFRuner.SetRobotPose(robotpath1);
+//    ///////////////////////////////////// ///////////////////////////////////
 
-    //add new map
-    for(int k=0;k!=points.size();++k)
-    {
+//    //add new map
+//    for(int k=0;k!=points.size();++k)
+//    {
 
-        double x=cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x-sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(0)[0];
-        double y=sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x+cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(1)[0];
-        //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
-        myekfslam->refenceMap.push_back(cv::Point2d(x,y));
-        //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
+//        double x=cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x-sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(0)[0];
+//        double y=sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x+cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(1)[0];
+//        //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
+//        myekfslam->refenceMap.push_back(cv::Point2d(x,y));
+//        //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
 
-    }
+//    }
 
-    ////////////////////////////////////////////////////////////////////////
-    //mapping process
+//    ////////////////////////////////////////////////////////////////////////
+//    //mapping process
 
-    myekfslam->mapper.InsertLocalLandmarkMap(points,robotpath1);
-    landMarkImg = myekfslam->mapper.GetLandmarkMap();
-    myekfslam->gridMapper.InsertLocalGridMap(myekfslam->rawLaserScanData,robotpath1);
-    myekfslam->gridMapper.GetOccupancyGridMap(gridImg);
+//    myekfslam->mapper.InsertLocalLandmarkMap(points,robotpath1);
+//    landMarkImg = myekfslam->mapper.GetLandmarkMap();
+//    myekfslam->gridMapper.InsertLocalGridMap(myekfslam->rawLaserScanData,robotpath1);
+//    myekfslam->gridMapper.GetOccupancyGridMap(gridImg);
 
-    myekfslam->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
+//    myekfslam->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
 
 
-    ////////////////////////////////////////////////////////////////////////
-    //path planning
-    cv::Point2d tempEnd;
-    cv::Mat plannignGridMap;
-    double search_rect=80;
-    myekfslam->planner.SetGridMap(gridImg);
-    myekfslam->planner.GetPathPlanningMap(plannignGridMap);
-    cv::circle(plannignGridMap,myekfslam->currentStart, 2, cv::Scalar(255,255,255), -1 );
-    myekfslam->FindCurrentNodeEnd(plannignGridMap,search_rect,myekfslam->currentStart,myekfslam->currentEnd,tempEnd);
+//    ////////////////////////////////////////////////////////////////////////
+//    //path planning
+//    cv::Point2d tempEnd;
+//    cv::Mat plannignGridMap;
+//    double search_rect=80;
+//    myekfslam->planner.SetGridMap(gridImg);
+//    myekfslam->planner.GetPathPlanningMap(plannignGridMap);
+//    cv::circle(plannignGridMap,myekfslam->currentStart, 2, cv::Scalar(255,255,255), -1 );
+//    myekfslam->FindCurrentNodeEnd(plannignGridMap,search_rect,myekfslam->currentStart,myekfslam->currentEnd,tempEnd);
 
 
-    double rsrart=sqrt(pow(myekfslam->currentStart.x,2.0) +pow(myekfslam->currentStart.y,2.0)  );
-    double rend=sqrt(pow(myekfslam->currentEnd.x,2.0) +pow(myekfslam->currentEnd.y,2.0)  );
-    double rFinal=sqrt(pow(myekfslam->FinalEnd.x,2.0) +pow(myekfslam->FinalEnd.y,2.0)  );
-    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
+//    double rsrart=sqrt(pow(myekfslam->currentStart.x,2.0) +pow(myekfslam->currentStart.y,2.0)  );
+//    double rend=sqrt(pow(myekfslam->currentEnd.x,2.0) +pow(myekfslam->currentEnd.y,2.0)  );
+//    double rFinal=sqrt(pow(myekfslam->FinalEnd.x,2.0) +pow(myekfslam->FinalEnd.y,2.0)  );
+//    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
 
-    cv::Mat color_plannignGridMap;
-    cv::cvtColor(plannignGridMap,color_plannignGridMap,CV_GRAY2BGR);
+//    cv::Mat color_plannignGridMap;
+//    cv::cvtColor(plannignGridMap,color_plannignGridMap,CV_GRAY2BGR);
 
 
-    //////////////////////////////////////////////
-    //save file
-    robotOutputFile<<DeltaRight<<" "<<DeltaLeft<<endl;
-    for(int i=0;i!=myekfslam->rawLaserScanData.size();++i)
-        laserOutputFile<<myekfslam->rawLaserScanData[i]<<" ";
+//    //////////////////////////////////////////////
+//    //save file
+//    robotOutputFile<<DeltaRight<<" "<<DeltaLeft<<endl;
+//    for(int i=0;i!=myekfslam->rawLaserScanData.size();++i)
+//        laserOutputFile<<myekfslam->rawLaserScanData[i]<<" ";
 
-    laserOutputFile<<endl;//´«¦æ
+//    laserOutputFile<<endl;//´«¦æ
 
 
-    //////////////////////////////////////////////
+//    //////////////////////////////////////////////
 
-    if(sceneCnt==sceneNum)  //»`¶°¨ì³õ´º¼Æ
-    {
-        myekfslam->myrobot->left_dcmotor->Stop();
-        myekfslam->myrobot->right_dcmotor->Stop();
+//    if(sceneCnt==sceneNum)  //»`¶°¨ì³õ´º¼Æ
+//    {
+//        myekfslam->myrobot->left_dcmotor->Stop();
+//        myekfslam->myrobot->right_dcmotor->Stop();
 
-        collector->SetStopped(true);
-        testEKFTimer->stop();
-        scenesTimer->stop();
-        ui->textBrowser->setFontWeight( QFont::Normal );
-        ui->textBrowser->setTextColor( QColor( "blue" ) );
-        ui->textBrowser->append("[System Message]:Motor stop!");
-        return;
-    }
+//        collector->SetStopped(true);
+//        testEKFTimer->stop();
+//        scenesTimer->stop();
+//        ui->textBrowser->setFontWeight( QFont::Normal );
+//        ui->textBrowser->setTextColor( QColor( "blue" ) );
+//        ui->textBrowser->append("[System Message]:Motor stop!");
+//        return;
+//    }
 
-    if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=gridDistance*sceneCnt)
-        //if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=sceneCnt*5)
-    {
+//    if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=gridDistance*sceneCnt)
+//        //if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=sceneCnt*5)
+//    {
 
-        checkBit=false;
+//        checkBit=false;
 
-        myekfslam->myrobot->left_dcmotor->Stop();
-        myekfslam->myrobot->right_dcmotor->Stop();
+//        myekfslam->myrobot->left_dcmotor->Stop();
+//        myekfslam->myrobot->right_dcmotor->Stop();
 
-        collector->SetStopped(true);
+//        collector->SetStopped(true);
 
-        motionMode=true;
-        ui->pushButton_2->click();
+//        motionMode=true;
+//        ui->pushButton_2->click();
 
-        testEKFTimer->stop();
-        sceneCnt++;
-        //QMessageBox::information(this,"dd","ff");
-        cout<<"scen:"<<sceneCnt<<"  robotpose:"<<robotpath1.robotPositionMean<<"   index:"<<saveFileIndex<<endl;
-        robotSceneFile<<sceneCnt<<" "<<robotpath1.robotPositionMean.ptr<double>(0)[0]<<" "<<robotpath1.robotPositionMean.ptr<double>(1)[0]<<" "<<robotpath1.robotPositionMean.ptr<double>(2)[0]<<" "<<saveFileIndex<<endl;
-        return;
-    }
+//        testEKFTimer->stop();
+//        sceneCnt++;
+//        //QMessageBox::information(this,"dd","ff");
+//        cout<<"scen:"<<sceneCnt<<"  robotpose:"<<robotpath1.robotPositionMean<<"   index:"<<saveFileIndex<<endl;
+//        robotSceneFile<<sceneCnt<<" "<<robotpath1.robotPositionMean.ptr<double>(0)[0]<<" "<<robotpath1.robotPositionMean.ptr<double>(1)[0]<<" "<<robotpath1.robotPositionMean.ptr<double>(2)[0]<<" "<<saveFileIndex<<endl;
+//        return;
+//    }
 
 
 
-    //if( (rend<=rsrart))  //¥b®|¤j©ó©Îµ¥©ó2*pixelFactor;
+//    //if( (rend<=rsrart))  //¥b®|¤j©ó©Îµ¥©ó2*pixelFactor;
 
-    if( rsrart <= rTempEnd && threcont - ui->doubleSpinBox->value() >= myekfslam->commandSets.size())
-    {
-        myekfslam->commandSets = std::queue<std::pair<int,double>> ();
-        myekfslam->planner.SetStartNode(myekfslam->currentStart);
+//    if( rsrart <= rTempEnd && threcont - ui->doubleSpinBox->value() >= myekfslam->commandSets.size())
+//    {
+//        myekfslam->commandSets = std::queue<std::pair<int,double>> ();
+//        myekfslam->planner.SetStartNode(myekfslam->currentStart);
 
-        do
-        {
+//        do
+//        {
 
-            myekfslam->planner.SetEndNode(tempEnd);
-            myekfslam->planner.AStartPlanning(myekfslam->robotPathSets);
-            //  QMessageBox::information(this, "Error!", "2_2!!"+QString::number(SLAM_Robot->robotPathSets.size()));
-            //  cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
+//            myekfslam->planner.SetEndNode(tempEnd);
+//            myekfslam->planner.AStartPlanning(myekfslam->robotPathSets);
+//            //  QMessageBox::information(this, "Error!", "2_2!!"+QString::number(SLAM_Robot->robotPathSets.size()));
+//            //  cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
-            //  cout<<"tempEnd1:"<<tempEnd<<endl;
-            //  cv::imshow("show",color_plannignGridMap);
-            //  cv::waitKey(1);
+//            //  cout<<"tempEnd1:"<<tempEnd<<endl;
+//            //  cv::imshow("show",color_plannignGridMap);
+//            //  cv::waitKey(1);
 
 
-            // QMessageBox::information(this, "Error!", "2_1_1");
+//            // QMessageBox::information(this, "Error!", "2_1_1");
 
 
-            if(myekfslam->robotPathSets.size()!=0)
-            {
-                myekfslam->PathSmoothing();
+//            if(myekfslam->robotPathSets.size()!=0)
+//            {
+//                myekfslam->PathSmoothing();
 
-                myekfslam->TrajectoryGenerationSmoothing();
-                threcont=myekfslam->commandSets.size();
+//                myekfslam->TrajectoryGenerationSmoothing();
+//                threcont=myekfslam->commandSets.size();
 
 
-            }
-            else
-            {
+//            }
+//            else
+//            {
 
 
-                tempEnd.x=myekfslam->currentStart.x+10;
-                tempEnd.y=myekfslam->currentStart.y;
+//                tempEnd.x=myekfslam->currentStart.x+10;
+//                tempEnd.y=myekfslam->currentStart.y;
 
 
-            }
-            //cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,0,255), 2  );
-            // cout<<"tempEnd2:"<<tempEnd<<endl;
+//            }
+//            //cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,0,255), 2  );
+//            // cout<<"tempEnd2:"<<tempEnd<<endl;
 
-            //  cv::imshow("show",color_plannignGridMap);
-            //  cv::waitKey(1);
-            // QMessageBox::information(this, "Error!", "2_1_2");
+//            //  cv::imshow("show",color_plannignGridMap);
+//            //  cv::waitKey(1);
+//            // QMessageBox::information(this, "Error!", "2_1_2");
 
 
-        }while(myekfslam->robotPathSets.size()==0);
+//        }while(myekfslam->robotPathSets.size()==0);
 
-        this->SetMotionCommand();
+//        this->SetMotionCommand();
 
-        /*
-        if(SLAM_Robot->robotPathSets.size()!=0)
-        {
-            SLAM_Robot->PathSmoothing();
+//        /*
+//        if(SLAM_Robot->robotPathSets.size()!=0)
+//        {
+//            SLAM_Robot->PathSmoothing();
 
-            SLAM_Robot->TrajectoryGenerationSmoothing();
-            threcont=SLAM_Robot->commandSets.size();
+//            SLAM_Robot->TrajectoryGenerationSmoothing();
+//            threcont=SLAM_Robot->commandSets.size();
 
-            this->SetMotionCommand();
-        }
-*/
-        ui->textBrowser->append("=====================");
-        ui->textBrowser->append("[robotPathSets size]:"+QString::number(myekfslam->robotPathSets.size()));
-        for(int i=0;i!=myekfslam->robotPathSets.size();++i)
-        {
+//            this->SetMotionCommand();
+//        }
+//*/
+//        ui->textBrowser->append("=====================");
+//        ui->textBrowser->append("[robotPathSets size]:"+QString::number(myekfslam->robotPathSets.size()));
+//        for(int i=0;i!=myekfslam->robotPathSets.size();++i)
+//        {
 
-            cv::circle(color_plannignGridMap, cv::Point(myekfslam->robotPathSets[i].x,myekfslam->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
-            ui->textBrowser->setFontWeight( QFont::DemiBold );
-            ui->textBrowser->setTextColor( QColor( "red" ) );
-            ui->textBrowser->append("[robotPathSets]:"+QString::number(myekfslam->robotPathSets[i].x)+" "+QString::number(myekfslam->robotPathSets[i].y));
+//            cv::circle(color_plannignGridMap, cv::Point(myekfslam->robotPathSets[i].x,myekfslam->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
+//            ui->textBrowser->setFontWeight( QFont::DemiBold );
+//            ui->textBrowser->setTextColor( QColor( "red" ) );
+//            ui->textBrowser->append("[robotPathSets]:"+QString::number(myekfslam->robotPathSets[i].x)+" "+QString::number(myekfslam->robotPathSets[i].y));
 
-        }
-        ui->textBrowser->append("=====================");
-    }
+//        }
+//        ui->textBrowser->append("=====================");
+//    }
 
 
 
 
 
 
-    // else
-    // ui->textBrowser->append("=====no path fuck========");
+//    // else
+//    // ui->textBrowser->append("=====no path fuck========");
 
 
-    cv::line( color_plannignGridMap, tempEnd, myekfslam->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
+//    cv::line( color_plannignGridMap, tempEnd, myekfslam->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
 
-    cv::circle(color_plannignGridMap, myekfslam->currentStart, 4, cv::Scalar(0,255,0), 2  );
-    cv::circle(color_plannignGridMap, myekfslam->currentEnd, 4, cv::Scalar(0,255,0), 2  );
-    cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
+//    cv::circle(color_plannignGridMap, myekfslam->currentStart, 4, cv::Scalar(0,255,0), 2  );
+//    cv::circle(color_plannignGridMap, myekfslam->currentEnd, 4, cv::Scalar(0,255,0), 2  );
+//    cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
-    clock_t endTime=clock();
-    double total=(double)(endTime-startTime)/CLK_TCK;
+//    clock_t endTime=clock();
+//    double total=(double)(endTime-startTime)/CLK_TCK;
 
-    ui->textBrowser_slam->setFontWeight( QFont::DemiBold );
-    ui->textBrowser_slam->setTextColor( QColor( "red" ) );
-    ui->textBrowser_slam->append("[pose]:" + QString::number(robotpath1.robotPositionMean.ptr<double>(0)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(1)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(2)[0]));
+//    ui->textBrowser_slam->setFontWeight( QFont::DemiBold );
+//    ui->textBrowser_slam->setTextColor( QColor( "red" ) );
+//    ui->textBrowser_slam->append("[pose]:" + QString::number(robotpath1.robotPositionMean.ptr<double>(0)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(1)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(2)[0]));
 
-    std::cout << "[Robot pose]:" << robotpath1.robotPositionMean << std::endl;
+//    std::cout << "[Robot pose]:" << robotpath1.robotPositionMean << std::endl;
 
-    std::cout << "single step Time:" << total << std::endl;
-    cv::imshow("gridImg",gridImg);
-    cv::imshow("landMarkImg",landMarkImg);
-    cv::imshow("color_plannignGridMap",color_plannignGridMap);
-    cv::imshow("plannignGridMap",plannignGridMap);
-    static int count=0;
-    QString name="Img/"+QString::number(count)+".jpg";
-    cv::imwrite(name.toStdString(),color_plannignGridMap);
-    cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
-    cv::imwrite("Img/gridImg.jpg",gridImg);
-    cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
-    count++;
+//    std::cout << "single step Time:" << total << std::endl;
+//    cv::imshow("gridImg",gridImg);
+//    cv::imshow("landMarkImg",landMarkImg);
+//    cv::imshow("color_plannignGridMap",color_plannignGridMap);
+//    cv::imshow("plannignGridMap",plannignGridMap);
+//    static int count=0;
+//    QString name="Img/"+QString::number(count)+".jpg";
+//    cv::imwrite(name.toStdString(),color_plannignGridMap);
+//    cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
+//    cv::imwrite("Img/gridImg.jpg",gridImg);
+//    cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
+//    count++;
 
-    cv::waitKey(1);
+//    cv::waitKey(1);
 
 
 
 
-    //if(motionMode==true)
+//    //if(motionMode==true)
 
 }
 
@@ -2534,5 +2578,36 @@ void EIC_Test::on_pushButton_23_clicked()
     myekfslam->Initial(ui->spinBox_slam_sceneNum->value(),
                        ui->spinBox_slam_x0->value(),
                        ui->spinBox_slam_x->value(),
-                       ui->spinBox_slam_y->value());
+                       ui->spinBox_slam_y->value(),
+                       ui->doubleSpinBox->value());
+}
+
+void EIC_Test::on_pushButton_24_clicked()
+{
+    PathPlanning pathplan;
+    ////////////////////////////////////////////////////////////////////////
+    //path planning
+    cv::Mat gridImg = cv::Mat(800, 800, CV_8UC1, cv::Scalar(255));
+    cv::rectangle(gridImg, cv::Point(200, 200), cv::Point(600, 600), cv::Scalar(0));
+    cv::imshow("show", gridImg);
+    cv::waitKey(1);
+//    cv::Point2d tempEnd;
+    cv::Mat plannignGridMap;
+//    double search_rect=80;
+    pathplan.SetGridMap(gridImg);
+    cv::Point2d currentStart = cv::Point2d(100, 100);
+    cv::Point2d currentEnd = cv::Point2d(700, 700);
+    pathplan.SetStartNode(currentStart);
+    pathplan.SetEndNode(currentEnd);
+
+    std::vector<cv::Point2d> pathSets;
+    pathplan.AStartPlanning(pathSets);
+    std::cout << "pathSets.size() = " << pathSets.size() << std::endl;
+
+    pathplan.GetPathPlanningMap(plannignGridMap);
+
+    cv::imshow("plan", plannignGridMap);
+    cv::waitKey(1);
+//    cv::circle(plannignGridMap, currentStart, 2, cv::Scalar(255,255,255), -1 );
+//    FindCurrentNodeEnd(plannignGridMap, search_rect, currentStart, currentEnd, tempEnd);
 }

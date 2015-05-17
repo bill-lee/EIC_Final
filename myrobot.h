@@ -8,7 +8,7 @@
 
 #include <Windows.h>                    // for Sleep(millisecond)
 
-#include <QObject>                      // for class QObject
+#include <QObject>                          // for class QObject
 #include <fstream>                      // for std::ofstream
 
 #include <QTime>                        // for QTime
