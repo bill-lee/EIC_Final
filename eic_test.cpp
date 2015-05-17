@@ -13,8 +13,7 @@ EIC_Test::EIC_Test(QWidget *parent) :
     Robot_Thread->start();
 
     ui->setupUi(this);
-	int b = 0;
-	int d = 0;
+
     // Step Motor default
 //    myrobot->step_motor->Open(sensorsetup->GetStepCOM(), sensorsetup->GetStepBaud().toInt());
 //    if (myrobot->step_motor->isOpen())
