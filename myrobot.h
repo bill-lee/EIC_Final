@@ -188,8 +188,6 @@ private:
     // 2015.01.30
     void PushDataToBuffer(boost::shared_ptr<QByteArray> scan);
 
-    bool data_start;
-
     int lasercount;
 
     int scancount;

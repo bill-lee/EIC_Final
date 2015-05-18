@@ -175,6 +175,8 @@ private slots:
 
     void on_pushButton_24_clicked();
 
+    void on_pushButton_robot_test_clicked();
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;

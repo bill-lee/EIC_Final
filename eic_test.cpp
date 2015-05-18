@@ -2588,7 +2588,7 @@ void EIC_Test::on_pushButton_24_clicked()
     ////////////////////////////////////////////////////////////////////////
     //path planning
     cv::Mat gridImg = cv::Mat(800, 800, CV_8UC1, cv::Scalar(255));
-    cv::rectangle(gridImg, cv::Point(200, 200), cv::Point(600, 600), cv::Scalar(0));
+//    cv::rectangle(gridImg, cv::Point(200, 200), cv::Point(600, 600), cv::Scalar(0));
     cv::imshow("show", gridImg);
     cv::waitKey(1);
 //    cv::Point2d tempEnd;
@@ -2610,4 +2610,23 @@ void EIC_Test::on_pushButton_24_clicked()
     cv::waitKey(1);
 //    cv::circle(plannignGridMap, currentStart, 2, cv::Scalar(255,255,255), -1 );
 //    FindCurrentNodeEnd(plannignGridMap, search_rect, currentStart, currentEnd, tempEnd);
+}
+
+void EIC_Test::on_pushButton_robot_test_clicked()
+{
+    std::string str = "./20150504.txt";
+    std::ifstream infile(str);
+    int count;
+    if (infile.is_open())
+    {
+        count = 0;
+        int temp;
+        infile >> temp;
+        infile >> temp;
+        infile >> temp;
+        while (infile >> temp)
+            count++;
+    }
+
+    std::cout << str << " size = " << count << " num = " << count/361 << std::endl;
 }

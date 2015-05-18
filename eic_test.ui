@@ -24,7 +24,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>7</number>
+          <number>3</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -1718,6 +1718,19 @@
            </property>
            <property name="text">
             <string>Test</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="pushButton_robot_test">
+           <property name="geometry">
+            <rect>
+             <x>290</x>
+             <y>320</y>
+             <width>81</width>
+             <height>41</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Test Size</string>
            </property>
           </widget>
          </widget>

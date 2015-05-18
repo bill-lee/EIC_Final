@@ -663,12 +663,12 @@ void Laser_LMS291_Controller::ShowScan(boost::shared_ptr<QByteArray> scan)
 
 bool Laser_LMS291_Controller::ReceiveData()
 {
-    QByteArray temp = this->peek(this->bytesAvailable());
-    for (int i = 0; i < temp.size(); i++)
-    {
-        std::cout << std::hex << (0xff & temp.at(i)) << " ";
-    }
-    std::cout << std::endl;
+//    QByteArray temp = this->peek(this->bytesAvailable());
+//    for (int i = 0; i < temp.size(); i++)
+//    {
+//        std::cout << std::hex << (0xff & temp.at(i)) << " ";
+//    }
+//    std::cout << std::endl;
 
     if (!contiscan_dataflag && !onescandataflag && comm_queue.size() != 0)
     {

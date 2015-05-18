@@ -39,7 +39,7 @@ void PathPlanning::AStartPlanning(std::vector<cv::Point2d> &pathSets)
     //cv::imshow("dilation_dst",dilation_dst);
 
   ///////////////
-    CvMatSearchNode::gridMapN=pathPlanningMap.clone();
+    CvMatSearchNode::gridMapN = pathPlanningMap.clone();
 
     std::cout << "nodeStart.x = " << nodeStart.x << ", " << "nodeStart.y = " << nodeStart.y << std::endl;
     std::cout << "nodeEnd.x = " << nodeEnd.x << ", " << "nodeEnd.y = " << nodeEnd.y << std::endl;
@@ -58,6 +58,7 @@ void PathPlanning::AStartPlanning(std::vector<cv::Point2d> &pathSets)
     while( SearchState == AStarSearch<CvMatSearchNode>::SEARCH_STATE_SEARCHING ); //判斷是否做完路徑規畫
 
     std::cout << "SearchSteps = " << SearchSteps << std::endl;
+    std::cout << "SearchState = " << SearchState << std::endl;
 
     if( SearchState == AStarSearch<CvMatSearchNode>::SEARCH_STATE_SUCCEEDED )
     {
@@ -90,7 +91,7 @@ void PathPlanning::AStartPlanning(std::vector<cv::Point2d> &pathSets)
                 steps ++;
 
         };
-        //cout << "Solution steps " << steps << endl;
+        cout << "Solution steps " << steps << endl;
         // Once you're done with the solution you can free the nodes up
         astarsearch.FreeSolutionNodes();
     }

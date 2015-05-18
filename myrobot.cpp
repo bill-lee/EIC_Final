@@ -4,7 +4,7 @@ lab405::MyRobot::MyRobot() :
     step_motor(new StepMotor_Controller()),
     laser_lms291(new Laser_LMS291_Controller),
     laser_slam(new Laser_LMS291_Controller),
-    lasercount(0), data_start(false), is_tigger(false), with_color(true),
+    lasercount(0), is_tigger(false), with_color(true),
     completeimage(false), completelaser(false),
     right_dcmotor(new DCMotor_Controller), left_dcmotor(new DCMotor_Controller),
     offlineSLAM_count(0), odo_cmd_count(0)
@@ -41,8 +41,6 @@ void lab405::MyRobot::DataAcquisition(double start_angle, int _scan_count, doubl
         this->step_motor->OpenANSWMode();
         // go to the initial position, emit one position attained
         this->step_motor->RotateAbsoluteAngle(start_angle);
-        // enable flag of data acquisition
-        data_start = true;
         std::cout << "laser count = " << _scan_count << std::endl;
         // assign member: scancount, rot_ang value
         scancount = _scan_count;
@@ -131,8 +129,7 @@ void lab405::MyRobot::DataAcquisitionConti(double _start_angle,
 
         databuffer.clear();
         lasercount = 0;
-        // enable flag of data acquisition
-        data_start = true;
+
         std::cout << "laser count = " << _scan_count << std::endl;
         // assign member: scancount, start_angle, and end_angle value
         scancount = _scan_count;
@@ -544,11 +541,14 @@ void lab405::MyRobot::PushDataToBuffer(boost::shared_ptr<QByteArray> scan)
     std::cout << temp_count << " test size = " << databuffer.size() << std::endl;
     std::cout << "scancount = " << scancount - 1 << std::endl;
     // sum(0:scancount-1) = scancount
-    if (temp_count == (scancount - 1))
+    if (temp_count >= (scancount - 1))
     {
+        if (temp_count == scancount - 1)   
+        {
+            WriteData();
+            emit FinishedDataAquisition(databuffer.size());
+        }
         StopDataAcquisitionConti();
-        WriteData();
-        emit FinishedDataAquisition(databuffer.size());
         std::cout << "whole time = " << wholetime.elapsed() << std::endl;
     }
 
@@ -585,13 +585,6 @@ void lab405::MyRobot::RotateToNextScan()
 
 void lab405::MyRobot::StepMotorStatus()
 {
-    if (data_start)
-    {
-        this->laser_lms291->TriggerOneScan();
-    }
-    else
-    {
-    }
 }
 
 void lab405::MyRobot::StopContiTrigger()
@@ -685,6 +678,7 @@ void lab405::MyRobot::TakePicture()
 void lab405::MyRobot::SaveImage(boost::shared_ptr<cv::Mat> ptr)
 {
     int temp_count = lasercount;
+    std::cout << "Img = " << temp_count << std::endl;
 //    if (temp_count < scancount)
 //    {
         cv::Mat frame;
