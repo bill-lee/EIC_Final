@@ -625,6 +625,8 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     //SLAM_Robot->gridMapper.InsertLocalGridMap();
 
     this->DataAssociation(line,cor);
+    // Get Robot State
+    this->robotPosition = this->robotState;
 //    myekfslam->myrobot->robotPosition=myekfslam->myrobot->EKFRuner.GetRobotPose();
 
 
@@ -636,7 +638,6 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     vector<cv::Point2d> temp;
     dataConvertRobotToWorld(points, this->robotPosition, temp);
 
-//    std::cout << "test1" << std::endl;
     double percent=0.5;
     //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
     cv::Point3d adjustPose;
@@ -645,7 +646,6 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     adjustPose.z=0;
     ////////////////////////////////////////////////////////////////////////
     // robot pose after adjust
-//    std::cout << "test2" << std::endl;
     RobotState robotpath1;
 
     robotpath1.robotPositionMean.ptr<double>(0)[0]= adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
@@ -662,7 +662,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     this->SetRobotPose(robotpath1);
     ///////////////////////////////////// ///////////////////////////////////
 
-    std::cout << "test3" << std::endl;
+
     //add new map
     for(int k=0;k!=points.size();++k)
     {
@@ -677,18 +677,12 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
     ////////////////////////////////////////////////////////////////////////
     //mapping process
-//    std::cout << "test3.5" << std::endl;
-    this->mapper.InsertLocalLandmarkMap(points,robotpath1);
-//    std::cout << "test3.6" << std::endl;
-    landMarkImg = this->mapper.GetLandmarkMap();
-//    std::cout << "test3.7" << std::endl;
-    this->gridMapper.InsertLocalGridMap(laserdata, robotpath1);
-//    std::cout << "test3.8" << std::endl;
-    this->gridMapper.GetOccupancyGridMap(gridImg);
-//    std::cout << "test3.9" << std::endl;
 
+    this->mapper.InsertLocalLandmarkMap(points,robotpath1);
+    landMarkImg = this->mapper.GetLandmarkMap();
+    this->gridMapper.InsertLocalGridMap(laserdata, robotpath1);
+    this->gridMapper.GetOccupancyGridMap(gridImg);
     this->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
-//    std::cout << "test4" << std::endl;
 
     cv::imshow("Grid Img", gridImg);
     cv::waitKey(10);
@@ -1003,7 +997,7 @@ void lab405::MyEFKSLAM::MotionPrediction(const double DeltaR, const double Delta
     //cout<<"//////////////////////////////////////////////////////"<<endl;
     //cout<<"¹w´úªº¾÷¾¹¤H¦ì¸m"<<robotCombinedState<<endl;
     //cout<<"¹w´úªº¾÷¾¹¤HCovariance"<<robotCombinedCovariance<<endl;
-    std::cout << "¹w´úªº¾÷¾¹¤H" << robotState.robotPositionMean << std::endl;
+    std::cout << "Predicted Robot State" << robotState.robotPositionMean << std::endl;
      //cout<<"¹w´úªº¾÷¾¹¤H"<<robotState.robotPositionCovariance<<endl;
     // cout<<"//////////////////////////////////////////////////////"<<endl;
 }

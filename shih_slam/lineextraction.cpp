@@ -7,7 +7,7 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
     cv::Point2d side1(0,0),side2(0,0);
     double maxDistance=0;
 
-    if(PointSite.size()<10)  //當小於多少點時跳出函式(結束遞迴的條件)  10
+    if(PointSite.size() < 10)  // ending condition, with condition of small than 10
         return ;
 
     for (int i=0 ; i<PointSite.size() ; i++) //finding the furthest points
@@ -21,7 +21,7 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
            }
         }
 
-    Line  LineA=_BuildLine(side1,side2);  //用最遠的兩點計算線的方程式
+    Line  LineA=_BuildLine(side1,side2);  // using farthest two points compute line
 
     cv::Point2d farthestPoint;
 
@@ -40,7 +40,7 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
         return;
     }
     std::vector<cv::Point2d> RightPointSite,LeftPointSite;
-    RightPointSite.reserve(1000);  //先預訂空間
+    RightPointSite.reserve(1000);
     LeftPointSite.reserve(1000);
 
     _SeparatePoints(LineA,farthestPoint,PointSite,LeftPointSite,RightPointSite);
