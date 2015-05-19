@@ -560,7 +560,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     }
 //    double ReadingR = sec_pos;
     odoValueCurrent.x = sec_pos;
-    std::cout << "odoValueCurrent.x = " << odoValueCurrent.x << std::endl;
+//    std::cout << "odoValueCurrent.x = " << odoValueCurrent.x << std::endl;
 
     fir_pos = myrobot->left_dcmotor->GetPose();
     sec_pos = myrobot->left_dcmotor->GetPose();
@@ -572,13 +572,14 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     }
 //    double ReadingL = sec_pos;
     odoValueCurrent.y = sec_pos;
-    std::cout << "odoValueCurrent.y = " << odoValueCurrent.y << std::endl;
+//    std::cout << "odoValueCurrent.y = " << odoValueCurrent.y << std::endl;
 
 
     // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
     // reverse of static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi));
-    double DeltaR = (odoValueCurrent.x - odoValuePrevious.x)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
-    double DeltaL = (odoValueCurrent.y - odoValuePrevious.y)*CV_PI*32.5*0.9487/(4096*3.333*14);
+    double DeltaR = abs(odoValueCurrent.x - odoValuePrevious.x)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
+    double DeltaL = abs(odoValueCurrent.y - odoValuePrevious.y)*CV_PI*32.5*0.9487/(4096*3.333*14);
+    std::cout << "DeltaR = " << DeltaR << ", DeltaL = " << DeltaL << std::endl;
 
     odoValuePrevious.x = odoValueCurrent.x;
     odoValuePrevious.y = odoValueCurrent.y;
