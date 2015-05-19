@@ -12,7 +12,6 @@ EIC_Test::EIC_Test(QWidget *parent) :
     myekfslam->myrobot->moveToThread(Robot_Thread);
     Robot_Thread->start();
 
-
     ui->setupUi(this);
 
     // Step Motor default

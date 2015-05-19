@@ -1804,6 +1804,7 @@ void lab405::MyEFKSLAM::TrajectoryGenerationSmoothing()
         temp.second=(int)(r*gridMapper.GetPixel_meterFactor()*100);  //m->cm
         commandSets.push(temp);
 
+
         //cout<<r<<" "<<angle-preangle<<endl;
         preangle=angle;
 
