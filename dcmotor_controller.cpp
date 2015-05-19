@@ -113,22 +113,24 @@ void DCMotor_Controller::SetNPmode()
 
 void DCMotor_Controller::SetVelocity(double speed)
 {
+    std::cout << this << ": " << speed << std::endl;
     std::stringstream  velocity;  //使用字串串流
     velocity << "V" << speed << "\n";
     ////////////////////////////////////////////////////
     // 使用DC motor要下的控制命令 V  (+:正轉  -:反轉)  --->命令下一次就可以維持轉動
     ///////////////////////////////////////////////////
     this->write(velocity.str().c_str(), strlen(velocity.str().c_str()));
-    command_queue.push(command::OK);
+//    command_queue.push(command::OK);
 }
 
 void DCMotor_Controller::Stop()
 {
 //    std::cout << "Stop" << std::endl;
+    std::cout << this << ": Stop" << std::endl;
     std::stringstream cmd;
     cmd << "V0\n";
     this->write(cmd.str().c_str(), strlen(cmd.str().c_str()));
-    command_queue.push(command::OK);
+//    command_queue.push(command::OK);
 }
 
 void DCMotor_Controller::SetANSWmode(int mode)

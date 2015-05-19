@@ -2630,3 +2630,9 @@ void EIC_Test::on_pushButton_robot_test_clicked()
 
     std::cout << str << " size = " << count << " num = " << count/361 << std::endl;
 }
+
+void EIC_Test::on_pushButton_25_clicked()
+{
+    myekfslam->myrobot->right_dcmotor->SetVelocity(100);
+    myekfslam->myrobot->left_dcmotor->SetVelocity(-100);
+}

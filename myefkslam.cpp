@@ -544,8 +544,12 @@ void lab405::MyEFKSLAM::Test(int pos)
 
 void lab405::MyEFKSLAM::EKFStepExamine()
 {
-    myrobot->left_dcmotor->Stop();
+
+
     myrobot->right_dcmotor->Stop();
+    std::cout << "right stopped!" << std::endl;
+    myrobot->left_dcmotor->Stop();
+    std::cout << "left stopped!" << std::endl;
 //    emit MotorStop();
 
 
@@ -851,6 +855,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    std::cout << "this->currentStart = " << this->currentStart << std::endl;
 //    std::cout << "this->currentEnd = " << this->currentEnd << std::endl;
 //    std::cout << "tempEnd = " << tempEnd << std::endl;
+
     ControlMotion(this->currentStart, tempEnd);
 
     cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
@@ -1657,22 +1662,41 @@ void lab405::MyEFKSLAM::SetMotionCommand2(int type, double value)
 void lab405::MyEFKSLAM::ControlMotion(const cv::Point2d &current_start, const cv::Point2d &current_end)
 {
 //    std::cout << "ControlMotion" << std::endl;
-    cv::Point2d diff = current_end - current_start;
-    if (diff.y < 0)
+//    cv::Point2d diff = current_end - current_start;
+//    if (diff.y < 0)
+//    {
+//        myrobot->left_dcmotor->SetVelocity(-30);
+//        myrobot->right_dcmotor->SetVelocity(0);
+//    }
+//    else if (diff.y > 0)
+//    {
+//        myrobot->left_dcmotor->SetVelocity(0);
+//        myrobot->right_dcmotor->SetVelocity(30);
+//    }
+//    else
+//    {
+//        myrobot->left_dcmotor->SetVelocity(-30);
+//        myrobot->right_dcmotor->SetVelocity(30);
+//    }
+    std::cout << "commandSets.front().first = " << commandSets.front().first << std::endl;
+    std::cout << "commandSets.size() = " << commandSets.size() << std::endl;
+    switch (commandSets.front().first)
     {
-        myrobot->left_dcmotor->SetVelocity(-30);
+    // 1: go forward, 2: turn right, 3: turn left
+    case 1:
+        myrobot->right_dcmotor->SetVelocity(100);
+        myrobot->left_dcmotor->SetVelocity(-100);
+        break;
+    case 2:
+        myrobot->left_dcmotor->SetVelocity(-100);
         myrobot->right_dcmotor->SetVelocity(0);
-    }
-    else if (diff.y > 0)
-    {
+        break;
+    case 3:
         myrobot->left_dcmotor->SetVelocity(0);
-        myrobot->right_dcmotor->SetVelocity(30);
+        myrobot->right_dcmotor->SetVelocity(100);
+        break;
     }
-    else
-    {
-        myrobot->left_dcmotor->SetVelocity(-30);
-        myrobot->right_dcmotor->SetVelocity(30);
-    }
+    commandSets.pop();
 
 }
 
@@ -1760,6 +1784,9 @@ void lab405::MyEFKSLAM::TrajectoryGenerationSmoothing()
     if(robotPathSetsSmoothing.size()==0)
         return;
 
+
+    while (commandSets.size() != 0)
+        commandSets.pop();
 
     double preangle=0;
     // 1: go forward, 2: turn right, 3: turn left
