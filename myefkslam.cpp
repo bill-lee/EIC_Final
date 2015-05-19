@@ -628,7 +628,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    myekfslam->myrobot->robotPosition=myekfslam->myrobot->EKFRuner.GetRobotPose();
 
 
-    std::cout << "after data ass" << std::endl;
+//    std::cout << "after data ass" << std::endl;
 //    // QMessageBox::information(this, "Error!", "ok1!");
 
     ////////////////////////////////////////////////////////////////////////
@@ -636,7 +636,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     vector<cv::Point2d> temp;
     dataConvertRobotToWorld(points, this->robotPosition, temp);
 
-    std::cout << "test1" << std::endl;
+//    std::cout << "test1" << std::endl;
     double percent=0.5;
     //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
     cv::Point3d adjustPose;
@@ -645,7 +645,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     adjustPose.z=0;
     ////////////////////////////////////////////////////////////////////////
     // robot pose after adjust
-    std::cout << "test2" << std::endl;
+//    std::cout << "test2" << std::endl;
     RobotState robotpath1;
 
     robotpath1.robotPositionMean.ptr<double>(0)[0]= adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
@@ -677,18 +677,21 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
     ////////////////////////////////////////////////////////////////////////
     //mapping process
-    std::cout << "test3.5" << std::endl;
+//    std::cout << "test3.5" << std::endl;
     this->mapper.InsertLocalLandmarkMap(points,robotpath1);
-    std::cout << "test3.6" << std::endl;
+//    std::cout << "test3.6" << std::endl;
     landMarkImg = this->mapper.GetLandmarkMap();
-    std::cout << "test3.7" << std::endl;
+//    std::cout << "test3.7" << std::endl;
     this->gridMapper.InsertLocalGridMap(laserdata, robotpath1);
-    std::cout << "test3.8" << std::endl;
+//    std::cout << "test3.8" << std::endl;
     this->gridMapper.GetOccupancyGridMap(gridImg);
-    std::cout << "test3.9" << std::endl;
+//    std::cout << "test3.9" << std::endl;
 
     this->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
-    std::cout << "test4" << std::endl;
+//    std::cout << "test4" << std::endl;
+
+    cv::imshow("Grid Img", gridImg);
+    cv::waitKey(10);
 
     ////////////////////////////////////////////////////////////////////////
     //path planning
@@ -700,7 +703,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     cv::circle(plannignGridMap, this->currentStart, 2, cv::Scalar(255,255,255), -1 );
     this->FindCurrentNodeEnd(plannignGridMap, search_rect, this->currentStart, this->currentEnd, tempEnd);
 
-
+    std::cout << "temp end = " << tempEnd << std::endl;
     double rstart=sqrt(pow(this->currentStart.x,2.0) +pow(this->currentStart.y,2.0)  );
     double rend=sqrt(pow(this->currentEnd.x,2.0) +pow(this->currentEnd.y,2.0)  );
     double rFinal=sqrt(pow(this->FinalEnd.x,2.0) +pow(this->FinalEnd.y,2.0)  );
@@ -810,7 +813,9 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
         }while(this->robotPathSets.size()==0);
 
-        this->SetMotionCommand();
+        // control
+//        this->SetMotionCommand();
+//        ControlMotion(this->currentStart, this->currentEnd);
 
         /*
         if(SLAM_Robot->robotPathSets.size()!=0)
@@ -847,6 +852,11 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
 
     cv::line(color_plannignGridMap, tempEnd,this->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
+
+//    std::cout << "this->currentStart = " << this->currentStart << std::endl;
+//    std::cout << "this->currentEnd = " << this->currentEnd << std::endl;
+//    std::cout << "tempEnd = " << tempEnd << std::endl;
+    ControlMotion(this->currentStart, tempEnd);
 
     cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
     cv::circle(color_plannignGridMap, this->currentEnd, 4, cv::Scalar(0,255,0), 2  );
@@ -1024,7 +1034,7 @@ void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature,
     vector<int> landmarkMatchingNum(obsLineFeature.size()+obsCornerFeature.size(),-1);  //¨Smatch¨ìªº½s¸¹¬°-1
     vector<Feature> obsFeature;
     obsFeature.reserve(obsLineFeature.size()+obsCornerFeature.size());
-    std::cout << "1test" << std::endl;
+
     for(int i=0;i!=obsLineFeature.size();++i)
     {
         Feature temp;
@@ -1033,7 +1043,7 @@ void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature,
         temp.SetFeatureType(Line_Feature);
         obsFeature.push_back(temp);
     }
-    std::cout << "2test" << std::endl;
+
     for(int i=0;i!=obsCornerFeature.size();++i)
     {
         Feature temp;
@@ -1043,13 +1053,13 @@ void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature,
 
         obsFeature.push_back(temp);
     }
-    std::cout << "3test" << std::endl;
+
     vector<Feature> newFeature;
     newFeature.reserve(obsLineFeature.size() + obsCornerFeature.size());
 
    // cout<<"Æ[¹î¯S¼x¼Æ¶q:"<<obsFeature.size()<<endl;
 
-        std::cout << "4test" << std::endl;
+
     for(int i=0;i!=obsFeature.size();++i)
     {
         //obsFeature ³o¤@¨B©ÒÂ^¨ú¨ìªº¯S¼x
@@ -1166,7 +1176,7 @@ void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature,
         }
 
     }
-    std::cout << "5test" << std::endl;
+
 
 
 
@@ -1182,14 +1192,14 @@ void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature,
        // cout<<"localTemp"<<localTemp.featureMean<<endl;
 
     }
-    std::cout << "6test" << std::endl;
+
 
 
 
     cv::imshow("imgg",imgg);
     cv::waitKey(1);
 
-    std::cout << "7test" << std::endl;
+
 
 /*
     cout<<"¼W¥[ªº¼Æ¥Ø:"<<map.size()<<" ¦a¹Ï¼Æ¶q:"<<landmarkSets.size()<<endl;
@@ -1647,6 +1657,28 @@ void lab405::MyEFKSLAM::SetMotionCommand2(int type, double value)
 
     if(type==1||type==3)
         leftCommand+=value;
+}
+
+void lab405::MyEFKSLAM::ControlMotion(const cv::Point2d &current_start, const cv::Point2d &current_end)
+{
+//    std::cout << "ControlMotion" << std::endl;
+    cv::Point2d diff = current_end - current_start;
+    if (diff.y < 0)
+    {
+        myrobot->left_dcmotor->SetVelocity(-30);
+        myrobot->right_dcmotor->SetVelocity(0);
+    }
+    else if (diff.y > 0)
+    {
+        myrobot->left_dcmotor->SetVelocity(0);
+        myrobot->right_dcmotor->SetVelocity(30);
+    }
+    else
+    {
+        myrobot->left_dcmotor->SetVelocity(-30);
+        myrobot->right_dcmotor->SetVelocity(30);
+    }
+
 }
 
 

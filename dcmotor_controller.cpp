@@ -2,7 +2,7 @@
 
 DCMotor_Controller::DCMotor_Controller()
 {
-    connect(this, SIGNAL(readyRead()), this, SLOT(Response()));
+//    connect(this, SIGNAL(readyRead()), this, SLOT(Response()));
 }
 
 DCMotor_Controller::~DCMotor_Controller()
@@ -124,7 +124,7 @@ void DCMotor_Controller::SetVelocity(double speed)
 
 void DCMotor_Controller::Stop()
 {
-    std::cout << "Stop" << std::endl;
+//    std::cout << "Stop" << std::endl;
     std::stringstream cmd;
     cmd << "V0\n";
     this->write(cmd.str().c_str(), strlen(cmd.str().c_str()));
@@ -147,7 +147,7 @@ void DCMotor_Controller::Disconnect()
 
 int DCMotor_Controller::GetPose()
 {
-    std::cout << "GetPose()" << std::endl;
+//    std::cout << "GetPose()" << std::endl;
     std::stringstream  cmd;
     cmd << "POS\n";
     this->write(cmd.str().c_str(), strlen(cmd.str().c_str()));

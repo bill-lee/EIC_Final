@@ -99,6 +99,7 @@ private:
     void SetRobotPose(const RobotState& robot);
     void SetMotionCommand();
     void SetMotionCommand2(int type, double value);
+    void ControlMotion(const cv::Point2d& current_start, const cv::Point2d& current_end);
 
     // EKF SLAM Data Member
     int landmarkNum;
