@@ -810,7 +810,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
             // QMessageBox::information(this, "Error!", "2_1_2");
 
 
-        }while(this->robotPathSets.size()==0);
+        } while (this->robotPathSets.size() == 0);
 
         // control
 //        this->SetMotionCommand();
@@ -1817,6 +1817,12 @@ void lab405::MyEFKSLAM::TrajectoryGenerationSmoothing()
             temp.second=commandAngle*180.0/CV_PI;
             commandSets.push(temp);
         }
+        else
+        {
+            temp.first=1;  //
+            temp.second=commandAngle*180.0/CV_PI;
+            commandSets.push(temp);
+        }
         /*
         else
         {  // if no rotate, assume no move
@@ -1826,10 +1832,10 @@ void lab405::MyEFKSLAM::TrajectoryGenerationSmoothing()
         }
         */
 
-        //command: forward
-        temp.first=1;  //grid map size determine the distance of each grid
-        temp.second=(int)(r*gridMapper.GetPixel_meterFactor()*100);  //m->cm
-        commandSets.push(temp);
+//        //command: forward
+//        temp.first=1;  //grid map size determine the distance of each grid
+//        temp.second=(int)(r*gridMapper.GetPixel_meterFactor()*100);  //m->cm
+//        commandSets.push(temp);
 
 
         //cout<<r<<" "<<angle-preangle<<endl;
