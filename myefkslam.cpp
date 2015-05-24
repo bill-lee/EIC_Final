@@ -1907,7 +1907,7 @@ void lab405::MyEFKSLAM::TrajectoryGenerationSmoothing()
     }
 }
 
-void lab405::MyEFKSLAM::NavigationUpdate()
+void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
 {
 
     myrobot->right_dcmotor->Stop();
@@ -2271,10 +2271,10 @@ void lab405::MyEFKSLAM::NavigationUpdate()
     // saving
     robotStateFile
             << saveFileIndex
-            << " " << RobotStateAfterAdjust.robotPositionMean.at<double>(0)[0]
-            << " " << RobotStateAfterAdjust.robotPositionMean.at<double>(1)[0]
-            << " " << RobotStateAfterAdjust.robotPositionMean.at<double>(2)[0]
-            << std::endl;
+            << " " << RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0]
+            << " " << RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0]
+            << " " << RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0]
+            << " " << scene << std::endl;
 
     std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
 
@@ -2437,7 +2437,7 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
                        << " " << this->robotPosition.robotPositionMean.ptr<double>(0)[0]
                        << " " << this->robotPosition.robotPositionMean.ptr<double>(1)[0]
                        << " " << this->robotPosition.robotPositionMean.ptr<double>(2)[0]
-                       << std::endl;
+                       << " " << 1 << std::endl;
 
         //set start end points
         this->currentStart.x = this->gridMapper.GetGridMapOriginalPoint().x;

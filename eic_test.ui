@@ -1405,6 +1405,19 @@
             <string>Do SLAM</string>
            </property>
           </widget>
+          <widget class="QCheckBox" name="checkBox_slam_navi_scene">
+           <property name="geometry">
+            <rect>
+             <x>430</x>
+             <y>480</y>
+             <width>73</width>
+             <height>16</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Scene ?</string>
+           </property>
+          </widget>
          </widget>
          <widget class="QWidget" name="tab_3">
           <attribute name="title">
@@ -2493,7 +2506,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
