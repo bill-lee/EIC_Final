@@ -60,6 +60,11 @@ public:
 
     void TurnRight(double angle, double speed);
 
+    // with one wheel un-moved
+    void TurnLeftOneLeg(double angle, double speed);
+
+    void TurnRightOneLeg(double angle, double speed);
+
     // robot sensor object pointer
     StepMotor_Controller *step_motor;
 

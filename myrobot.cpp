@@ -314,6 +314,36 @@ void lab405::MyRobot::TurnRight(double angle, double speed)
     }
 }
 
+void lab405::MyRobot::TurnLeftOneLeg(double angle, double speed)
+{
+    if (angle > 0 && angle <= 360)
+    {
+        right_dcmotor->SetMaxVelocity(speed);
+        left_dcmotor->Stop();
+
+        // distance between wheels = 0.57m
+        // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
+        // calibration coeffient: y = 0.9487x
+        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487);
+        right_dcmotor->RotateRelativeDistancce(value);
+    }
+}
+
+void lab405::MyRobot::TurnRightOneLeg(double angle, double speed)
+{
+    if (angle > 0 && angle <= 360)
+    {
+        right_dcmotor->Stop();
+        left_dcmotor->SetMaxVelocity(speed);
+
+        // distance between wheels = 0.57m
+        // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
+        // calibration coeffient: y = 0.9487x
+        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487);
+        left_dcmotor->RotateRelativeDistancce(value);
+    }
+}
+
 void lab405::MyRobot::test()
 {
 

@@ -69,6 +69,11 @@ public:
     void PathSmoothing();
     void TrajectoryGenerationSmoothing();
 
+    // for navigation update
+    void NavigationUpdate();
+
+    void NavigationInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
+
 public slots:
     void Prediction();
 
@@ -147,6 +152,7 @@ private:
     std::size_t num_tP;
     std::vector<cv::Point2d> tP_set;
     std::size_t tP_count;
+    std::size_t navi_count;
 
 };
 }

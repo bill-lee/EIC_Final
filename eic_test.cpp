@@ -2651,3 +2651,50 @@ void EIC_Test::on_pushButton_25_clicked()
     myekfslam->myrobot->right_dcmotor->SetVelocity(100);
     myekfslam->myrobot->left_dcmotor->SetVelocity(-100);
 }
+
+void EIC_Test::on_pushButton_slam_navi_clicked()
+{
+    myekfslam->NavigationUpdate();
+}
+
+void EIC_Test::on_pushButton_dcmotor_oneleft_clicked()
+{
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
+    {
+        ui->textBrowser->append(QString("One Left %1 degrees").arg(ui->doubleSpinBox_dcmotor_angle->value()));
+        myekfslam->myrobot->TurnLeftOneLeg(ui->doubleSpinBox_dcmotor_angle->value(),
+                          ui->doubleSpinBox_dcmotor_velocity->value());
+    }
+    else
+    {
+        ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
+    }
+}
+
+void EIC_Test::on_pushButton_dcmotor_oneright_clicked()
+{
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
+    {
+        ui->textBrowser->append(QString("One Right %1 degrees").arg(ui->doubleSpinBox_dcmotor_angle->value()));
+        myekfslam->myrobot->TurnRightOneLeg(ui->doubleSpinBox_dcmotor_angle->value(),
+                          ui->doubleSpinBox_dcmotor_velocity->value());
+    }
+    else
+    {
+        ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
+    }
+}
+
+void EIC_Test::on_pushButton_slam_navi_init_clicked()
+{
+    myekfslam->NavigationInitial(ui->spinBox_slam_sceneNum->value(),
+                       ui->spinBox_slam_x0->value(),
+                       ui->spinBox_slam_x->value(),
+                       ui->spinBox_slam_y->value(),
+                       ui->doubleSpinBox->value(),
+                       ui->lineEdit_slam_tPoints->text().toStdString());
+}

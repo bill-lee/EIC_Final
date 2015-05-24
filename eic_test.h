@@ -180,6 +180,14 @@ private slots:
 
     void on_pushButton_25_clicked();
 
+    void on_pushButton_slam_navi_clicked();
+
+    void on_pushButton_dcmotor_oneleft_clicked();
+
+    void on_pushButton_dcmotor_oneright_clicked();
+
+    void on_pushButton_slam_navi_init_clicked();
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;
