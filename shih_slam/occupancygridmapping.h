@@ -20,7 +20,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////////////
     // constructor
     ///////////////////////////////////////////////////////////////////////////////////
-    OccupancyGridMapping(const int rows = 800, const int cols = 800, const int obstacle_width = 1, const int laserBeam_width = 1, double z = 2500, double a = CV_PI, double m = 0.25)
+    OccupancyGridMapping(const int rows = 800, const int cols = 800, const int obstacle_width = 1, const int laserBeam_width = 1, double z = 2500, double a = CV_PI, double m = 0.05)
         : girdMap_rows(rows), girdMap_cols(cols), alpha(obstacle_width), beta(laserBeam_width), maxZ(z), aperture(a), pixel_meterFactor(m)
     {
         gridMap_originalPoint =cv::Point2d(150,500);  //unit:m

@@ -2655,6 +2655,7 @@ void EIC_Test::on_pushButton_25_clicked()
 void EIC_Test::on_pushButton_slam_navi_clicked()
 {
     myekfslam->NavigationUpdate();
+    ui->textBrowser->append(QString("Do SLAM!"));
 }
 
 void EIC_Test::on_pushButton_dcmotor_oneleft_clicked()

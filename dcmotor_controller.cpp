@@ -126,7 +126,7 @@ void DCMotor_Controller::SetVelocity(double speed)
 void DCMotor_Controller::Stop()
 {
 //    std::cout << "Stop" << std::endl;
-    std::cout << this << ": Stop" << std::endl;
+//    std::cout << this << ": Stop" << std::endl;
     std::stringstream cmd;
     cmd << "V0\n";
     this->write(cmd.str().c_str(), strlen(cmd.str().c_str()));

@@ -1984,10 +1984,12 @@ void lab405::MyEFKSLAM::NavigationUpdate()
     ////////////////////////////////////////////////////////////////////
     // saving
     saveFileIndex++;
-    robotOutputFile << odoValueCurrent.x << " " << odoValueCurrent.y << endl;  //encoder
+    robotOutputFile << saveFileIndex << " " << odoValueCurrent.x << " " << odoValueCurrent.y << endl;  //encoder
+    laserOutputFile << saveFileIndex << " ";
     for(int i = 0; i != LaserRawData.size(); ++i)
         laserOutputFile << LaserRawData[i] << " ";
     ////////////////////////////////////////////////////////////////////
+    laserOutputFile << std::endl;
 
     this->mapper.RangesDataToPointsData(LaserRawData,LaserCatesianPoints);
     this->lineExtracter.SplitAndMerge(LaserCatesianPoints,line);
@@ -2198,7 +2200,7 @@ void lab405::MyEFKSLAM::NavigationUpdate()
 
         // control
 //        this->SetMotionCommand();
-        ControlMotion();
+//        ControlMotion();
 
         /*
         if(SLAM_Robot->robotPathSets.size()!=0)
@@ -2390,7 +2392,8 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
             //////////////////////////////////////////////
             //save file
             saveFileIndex++;
-            robotOutputFile << 0 << " " << 0 << endl;  //encoder
+            robotOutputFile << saveFileIndex<< " " << 0 << " " << 0 << endl;  //encoder
+            laserOutputFile << saveFileIndex << " ";
             for(int i = 0; i != laserdata.size(); ++i)
                 laserOutputFile << laserdata[i] << " ";
 

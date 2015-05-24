@@ -324,7 +324,7 @@ void lab405::MyRobot::TurnLeftOneLeg(double angle, double speed)
         // distance between wheels = 0.57m
         // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
         // calibration coeffient: y = 0.9487x
-        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487);
+        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487*2);
         right_dcmotor->RotateRelativeDistancce(value);
     }
 }
@@ -339,8 +339,8 @@ void lab405::MyRobot::TurnRightOneLeg(double angle, double speed)
         // distance between wheels = 0.57m
         // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
         // calibration coeffient: y = 0.9487x
-        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487);
-        left_dcmotor->RotateRelativeDistancce(value);
+        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487*2);
+        left_dcmotor->RotateRelativeDistancce((-1)*value);
     }
 }
 
