@@ -35,7 +35,9 @@ void OccupancyGridMapping::GetLocalGridMap(const std::vector<double> &laserRange
 
 }
 
-void OccupancyGridMapping::InvLaserModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d& robotPose2D, cv::Mat& gridMap, bool isGlobal)
+void OccupancyGridMapping::InvLaserModel(const double laserBeamRange, const double laserBeamAngle,
+                                         const cv::Point3d& robotPose2D, cv::Mat& gridMap,
+                                         bool isGlobal)
 {
     // z: laserBeamRange(unit:cm)   follow robot pose to fill the value
     double lo = 0;
@@ -120,15 +122,15 @@ void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRa
 }
 void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRangeData, const RobotState& robot)
 {
-    double resolution = aperture/(laserRangeData.size()-1);
+    double resolution = aperture/(laserRangeData.size() - 1);
 
     cv::Point3d robotPose2D;
-    robotPose2D.x=robot.robotPositionMean.ptr<double>(0)[0];
-    robotPose2D.y=robot.robotPositionMean.ptr<double>(1)[0];
-    robotPose2D.z=robot.robotPositionMean.ptr<double>(2)[0];
+    robotPose2D.x = robot.robotPositionMean.ptr<double>(0)[0];
+    robotPose2D.y = robot.robotPositionMean.ptr<double>(1)[0];
+    robotPose2D.z = robot.robotPositionMean.ptr<double>(2)[0];
 
-
-    for(int i=10;i!=laserRangeData.size();++i)
+    //
+    for(int i = 10; i != laserRangeData.size(); ++i)
     {
 
         if((laserRangeData[i] >= MAX_RANGE||laserRangeData[i] <= 10)
@@ -137,6 +139,7 @@ void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRa
             continue;
         double angle = (i*resolution) - aperture/2;
 
+        // beam model
         if(laserRangeData[i]<2000)
             InvLaserModel(laserRangeData[i],angle,robotPose2D,girdMap);
         else
@@ -166,8 +169,8 @@ cv::Point2d OccupancyGridMapping::GetRobotCenter(const cv::Point3d &pose)
 cv::Point2d OccupancyGridMapping::GetRobotCenter(const RobotState& pose)
 {
     //world robot pose to grid map
-    double mx=pose.robotPositionMean.ptr<double>(0)[0]/100.0*(1.0/pixel_meterFactor)+gridMap_originalPoint.x;   //cm to m
-    double my=pose.robotPositionMean.ptr<double>(1)[0]/100.0*(1.0/pixel_meterFactor)+gridMap_originalPoint.y;
+    double mx=pose.robotPositionMean.ptr<double>(0)[0]/100.0*(1.0/pixel_meterFactor) + gridMap_originalPoint.x;   //cm to m
+    double my=pose.robotPositionMean.ptr<double>(1)[0]/100.0*(1.0/pixel_meterFactor) + gridMap_originalPoint.y;
 
 
     return cv::Point2d(mx,my);

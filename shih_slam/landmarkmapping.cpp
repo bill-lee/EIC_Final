@@ -114,7 +114,7 @@ void LandmarkMapping::DrawLine(const Feature &line, const RobotState &robot, con
    cv::line( showImg, pt1, pt2, s1, lineWidth, CV_AA);
 
 }
-
+// used
 void LandmarkMapping::InsertLocalLandmarkMap(std::vector<cv::Point2d> &laserPointsData, const RobotState &robot)
 {
 
@@ -124,12 +124,12 @@ void LandmarkMapping::InsertLocalLandmarkMap(std::vector<cv::Point2d> &laserPoin
 
     for(int i=0;i!=laserPointsData.size();++i)
     {
-        double mx=cos(phi)*laserPointsData[i].x-sin(phi)*laserPointsData[i].y+x;
-        double my=sin(phi)*laserPointsData[i].x+cos(phi)*laserPointsData[i].y+y;
-         mx=mx/100.0*(1.0/pixel_meterFactor)+landmarkMap_originalPoint.x;
-         my=my/100.0*(1.0/pixel_meterFactor)+landmarkMap_originalPoint.y;
+        double mx=cos(phi)*laserPointsData[i].x - sin(phi)*laserPointsData[i].y + x;
+        double my=sin(phi)*laserPointsData[i].x + cos(phi)*laserPointsData[i].y + y;
+        mx=mx/100.0*(1.0/pixel_meterFactor) + landmarkMap_originalPoint.x;
+        my=my/100.0*(1.0/pixel_meterFactor) + landmarkMap_originalPoint.y;
 
-         cv::circle(landmarkMap , cv::Point(mx,my), 1, cv::Scalar(0,0,255), -1  );
+        cv::circle(landmarkMap , cv::Point(mx,my), 1, cv::Scalar(0,0,255), -1  );
     }
 
 
@@ -137,7 +137,7 @@ void LandmarkMapping::InsertLocalLandmarkMap(std::vector<cv::Point2d> &laserPoin
 
 }
 
-void LandmarkMapping::DrawRobotPoseWithErrorEllipse(const RobotState robot, cv::Mat &img,bool showEllipse)
+void LandmarkMapping::DrawRobotPoseWithErrorEllipse(const RobotState robot, cv::Mat &img, bool showEllipse)
 {
 
 

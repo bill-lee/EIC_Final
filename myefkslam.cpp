@@ -215,8 +215,8 @@ void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _
     this->FinalEnd.y = this->gridMapper.GetGridMapOriginalPoint().y;
 
 
-    this->currentEnd.x = _slam_x;
-    this->currentEnd.y = _slam_y;
+    this->GoalEnd.x = _slam_x;
+    this->GoalEnd.y = _slam_y;
 
     // initial
     this->odoValuePrevious = cv::Point2d(0.0, 0.0);
@@ -611,14 +611,14 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    std::vector<cv::Point2d> points;
 //    std::vector<Line> line;
 //    std::vector<Corner> cor;
-    std::vector<double> laserdata;
-    std::vector<cv::Point2d> points;
+    std::vector<double> LaserRawData;
+    std::vector<cv::Point2d> LaserCatesianPoints;
     std::vector<Line> line;
     std::vector<Corner> cor;
-    myrobot->laser_slam->GetOneLaserData(laserdata);
+    myrobot->laser_slam->GetOneLaserData(LaserRawData);
 
-    this->mapper.RangesDataToPointsData(laserdata,points);
-    this->lineExtracter.SplitAndMerge(points,line);
+    this->mapper.RangesDataToPointsData(LaserRawData,LaserCatesianPoints);
+    this->lineExtracter.SplitAndMerge(LaserCatesianPoints,line);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -629,7 +629,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
     //SLAM_Robot->gridMapper.InsertLocalGridMap();
 
-    this->DataAssociation(line,cor);
+    this->DataAssociationAndUpdate(line,cor);
     // Get Robot State
     this->robotPosition = this->robotState;
 //    myekfslam->myrobot->robotPosition=myekfslam->myrobot->EKFRuner.GetRobotPose();
@@ -638,42 +638,48 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    std::cout << "after data ass" << std::endl;
 //    // QMessageBox::information(this, "Error!", "ok1!");
 
-    ////////////////////////////////////////////////////////////////////////
-    //ICP correction
-    vector<cv::Point2d> temp;
-    dataConvertRobotToWorld(points, this->robotPosition, temp);
+//    ////////////////////////////////////////////////////////////////////////
+//    //ICP correction
+//    vector<cv::Point2d> temp;
+//    dataConvertRobotToWorld(points, this->robotPosition, temp);
+//    double percent=0.5;
+//    cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
 
-    double percent=0.5;
-    //cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
     cv::Point3d adjustPose;
     adjustPose.x=0;
     adjustPose.y=0;
     adjustPose.z=0;
     ////////////////////////////////////////////////////////////////////////
     // robot pose after adjust
-    RobotState robotpath1;
+    RobotState RobotStateAfterAdjust;
 
-    robotpath1.robotPositionMean.ptr<double>(0)[0]= adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
-    robotpath1.robotPositionMean.ptr<double>(1)[0]= adjustPose.y + this->robotPosition.robotPositionMean.ptr<double>(1)[0];
-    robotpath1.robotPositionMean.ptr<double>(2)[0]= adjustPose.z + this->robotPosition.robotPositionMean.ptr<double>(2)[0];
-    robotpath1.robotPositionCovariance = this->robotPosition.robotPositionCovariance.clone();
+    RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0] = adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
+    RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0] = adjustPose.y + this->robotPosition.robotPositionMean.ptr<double>(1)[0];
+    RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0] = adjustPose.z + this->robotPosition.robotPositionMean.ptr<double>(2)[0];
+    RobotStateAfterAdjust.robotPositionCovariance = this->robotPosition.robotPositionCovariance.clone();
 
     // xyz project to plane
-    cv::Point2d imagePose = this->gridMapper.GetRobotCenter(robotpath1);
+    cv::Point2d imagePose = this->gridMapper.GetRobotCenter(RobotStateAfterAdjust);
 
-    this->currentStart.x=imagePose.x;
-    this->currentStart.y=imagePose.y;
+    // convert to unit: m
+    this->currentStart.x = imagePose.x;
+    this->currentStart.y = imagePose.y;
 
-    this->SetRobotPose(robotpath1);
+    // set into combine state
+    this->SetRobotPose(RobotStateAfterAdjust);
     ///////////////////////////////////// ///////////////////////////////////
 
 
-    //add new map
-    for(int k=0;k!=points.size();++k)
+    // add new map
+    // Rotate Laser Points
+    for(int k = 0; k != LaserCatesianPoints.size(); ++k)
     {
-
-        double x=cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x-sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(0)[0];
-        double y=sin(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].x+cos(robotpath1.robotPositionMean.ptr<double>(2)[0])*points[k].y+robotpath1.robotPositionMean.ptr<double>(1)[0];
+        double x = LaserCatesianPoints[k].x*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                - LaserCatesianPoints[k].y*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                + RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0];
+        double y = LaserCatesianPoints[k].x*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                + LaserCatesianPoints[k].y*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                + RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0];
         //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
         this->refenceMap.push_back(cv::Point2d(x,y));
         //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
@@ -682,31 +688,34 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
     ////////////////////////////////////////////////////////////////////////
     //mapping process
-
-    this->mapper.InsertLocalLandmarkMap(points,robotpath1);
+    // Raw Catesian Map
+    this->mapper.InsertLocalLandmarkMap(LaserCatesianPoints, RobotStateAfterAdjust);
     landMarkImg = this->mapper.GetLandmarkMap();
-    this->gridMapper.InsertLocalGridMap(laserdata, robotpath1);
-    this->gridMapper.GetOccupancyGridMap(gridImg);
-    this->mapper.DrawRobotPoseWithErrorEllipse(robotpath1,landMarkImg,true);
 
-    cv::imshow("Grid Img", gridImg);
+    // Grid Map
+    this->gridMapper.InsertLocalGridMap(LaserRawData, RobotStateAfterAdjust);
+    this->gridMapper.GetOccupancyGridMap(OccupancyGridMapImg);
+    // draw on landmarkimg
+    this->mapper.DrawRobotPoseWithErrorEllipse(RobotStateAfterAdjust, landMarkImg, true);
+
+    cv::imshow("Grid Img", OccupancyGridMapImg);
     cv::waitKey(10);
 
     ////////////////////////////////////////////////////////////////////////
     //path planning
     cv::Point2d tempEnd;
     cv::Mat plannignGridMap;
-    double search_rect=80;
-    this->planner.SetGridMap(gridImg);
+    double search_rect = 80;
+    this->planner.SetGridMap(OccupancyGridMapImg, 1);
     this->planner.GetPathPlanningMap(plannignGridMap);
     cv::circle(plannignGridMap, this->currentStart, 2, cv::Scalar(255,255,255), -1 );
-    this->FindCurrentNodeEnd(plannignGridMap, search_rect, this->currentStart, this->currentEnd, tempEnd);
+    this->FindCurrentNodeEnd(plannignGridMap, search_rect, this->currentStart, this->GoalEnd, tempEnd);
 
     std::cout << "temp end = " << tempEnd << std::endl;
-    double rstart=sqrt(pow(this->currentStart.x,2.0) +pow(this->currentStart.y,2.0)  );
-    double rend=sqrt(pow(this->currentEnd.x,2.0) +pow(this->currentEnd.y,2.0)  );
-    double rFinal=sqrt(pow(this->FinalEnd.x,2.0) +pow(this->FinalEnd.y,2.0)  );
-    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
+//    double rstart=sqrt(pow(this->currentStart.x,2.0) +pow(this->currentStart.y,2.0)  );
+//    double rend=sqrt(pow(this->GoalEnd.x,2.0) +pow(this->GoalEnd.y,2.0)  );
+//    double rFinal=sqrt(pow(this->FinalEnd.x,2.0) +pow(this->FinalEnd.y,2.0)  );
+//    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
 
     cv::Mat color_plannignGridMap;
     cv::cvtColor(plannignGridMap,color_plannignGridMap,CV_GRAY2BGR);
@@ -763,16 +772,19 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
     //if( (rend<=rsrart))  //¥b®|¤j©ó©Îµ¥©ó2*pixelFactor;
 
-    if( rstart <= rTempEnd && temp_threscont - thresh_count >= this->commandSets.size())
-    {
+
+//    if( rstart <= rTempEnd && temp_threscont - thresh_count >= this->commandSets.size())
+//    {
         this->commandSets = std::queue<std::pair<int,double>> ();
-        this->planner.SetStartNode(this->currentStart);
+//        this->planner.SetStartNode(this->currentStart);
 
         do
         {
 
-            this->planner.SetEndNode(tempEnd);
-            this->planner.AStartPlanning(this->robotPathSets);
+//            this->planner.SetEndNode(tempEnd);
+//            this->planner.AStartPlanning(this->robotPathSets);
+            planner.run(this->currentStart, tempEnd, this->robotPathSets);
+
             //  QMessageBox::information(this, "Error!", "2_2!!"+QString::number(SLAM_Robot->robotPathSets.size()));
             //  cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
@@ -784,7 +796,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
             // QMessageBox::information(this, "Error!", "2_1_1");
 
 
-            if(this->robotPathSets.size()!=0)
+            if(this->robotPathSets.size() != 0)
             {
                 this->PathSmoothing();
 
@@ -795,12 +807,8 @@ void lab405::MyEFKSLAM::EKFStepExamine()
             }
             else
             {
-
-
-                tempEnd.x = this->currentStart.x+10;
+                tempEnd.x = this->currentStart.x + 10;
                 tempEnd.y = this->currentStart.y;
-
-
             }
             //cv::circle(color_plannignGridMap,tempEnd, 4, cv::Scalar(0,0,255), 2  );
             // cout<<"tempEnd2:"<<tempEnd<<endl;
@@ -839,7 +847,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
         }
 //        ui->textBrowser->append("=====================");
-    }
+//    }
 
 
 
@@ -850,7 +858,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     // ui->textBrowser->append("=====no path fuck========");
 
 
-    cv::line(color_plannignGridMap, tempEnd,this->currentEnd, cv::Scalar(0,0,255), 7,CV_AA);
+    cv::line(color_plannignGridMap, tempEnd, this->GoalEnd, cv::Scalar(0,0,255), 7,CV_AA);
 
 //    std::cout << "this->currentStart = " << this->currentStart << std::endl;
 //    std::cout << "this->currentEnd = " << this->currentEnd << std::endl;
@@ -859,7 +867,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     ControlMotion(this->currentStart, tempEnd);
 
     cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
-    cv::circle(color_plannignGridMap, this->currentEnd, 4, cv::Scalar(0,255,0), 2  );
+    cv::circle(color_plannignGridMap, this->GoalEnd, 4, cv::Scalar(0,255,0), 2  );
     cv::circle(color_plannignGridMap, tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
 //    clock_t endTime=clock();
@@ -869,10 +877,10 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 //    ui->textBrowser_slam->setTextColor( QColor( "red" ) );
 //    ui->textBrowser_slam->append("[pose]:" + QString::number(robotpath1.robotPositionMean.ptr<double>(0)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(1)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(2)[0]));
 
-    std::cout << "[Robot pose]:" << robotpath1.robotPositionMean << std::endl;
+    std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
 
 //    std::cout << "single step Time:" << total << std::endl;
-    cv::imshow("gridImg",gridImg);
+    cv::imshow("gridImg",OccupancyGridMapImg);
     cv::imshow("landMarkImg",landMarkImg);
     cv::imshow("color_plannignGridMap",color_plannignGridMap);
     cv::imshow("plannignGridMap",plannignGridMap);
@@ -880,7 +888,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
     QString name="Img/"+QString::number(count)+".jpg";
     cv::imwrite(name.toStdString(),color_plannignGridMap);
     cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
-    cv::imwrite("Img/gridImg.jpg",gridImg);
+    cv::imwrite("Img/gridImg.jpg",OccupancyGridMapImg);
     cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
     count++;
 
@@ -1008,7 +1016,7 @@ void lab405::MyEFKSLAM::MotionPrediction(const double DeltaR, const double Delta
     // cout<<"//////////////////////////////////////////////////////"<<endl;
 }
 
-void lab405::MyEFKSLAM::DataAssociation(const std::vector<Line> &obsLineFeature, const std::vector<Corner> &obsCornerFeature)
+void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLineFeature, const std::vector<Corner> &obsCornerFeature)
 {
     //obsFeature: match corner and line features in robot coordinate
 
@@ -1564,10 +1572,10 @@ void lab405::MyEFKSLAM::MapInitial(const std::vector<std::vector<Line> > &lineFe
 
 void lab405::MyEFKSLAM::SetRobotPose(const RobotState &robot)
 {
-    robotState.robotPositionMean=robot.robotPositionMean.clone();
-    robotCombinedState.ptr<double>(0)[0]=robot.robotPositionMean.ptr<double>(0)[0];
-    robotCombinedState.ptr<double>(1)[0]=robot.robotPositionMean.ptr<double>(1)[0];
-    robotCombinedState.ptr<double>(2)[0]=robot.robotPositionMean.ptr<double>(2)[0];
+    robotState.robotPositionMean = robot.robotPositionMean.clone();
+    robotCombinedState.ptr<double>(0)[0] = robot.robotPositionMean.ptr<double>(0)[0];
+    robotCombinedState.ptr<double>(1)[0] = robot.robotPositionMean.ptr<double>(1)[0];
+    robotCombinedState.ptr<double>(2)[0] = robot.robotPositionMean.ptr<double>(2)[0];
 }
 
 void lab405::MyEFKSLAM::SetMotionCommand()
@@ -1784,9 +1792,6 @@ void lab405::MyEFKSLAM::TrajectoryGenerationSmoothing()
     if(robotPathSetsSmoothing.size()==0)
         return;
 
-
-    while (commandSets.size() != 0)
-        commandSets.pop();
 
     double preangle=0;
     // 1: go forward, 2: turn right, 3: turn left

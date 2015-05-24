@@ -342,8 +342,8 @@ void dataConvertRobotToWorld(const std::vector<cv::Point2d>& localPointSets,cons
     for(int i=0;i!=localPointSets.size();++i)
     {
 
-        double x=cos(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].x-sin(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].y+robotPose.robotPositionMean.ptr<double>(0)[0];
-        double y=sin(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].x+cos(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].y+robotPose.robotPositionMean.ptr<double>(1)[0];
+        double x=cos(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].x - sin(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].y + robotPose.robotPositionMean.ptr<double>(0)[0];
+        double y=sin(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].x + cos(robotPose.robotPositionMean.ptr<double>(2)[0])*localPointSets[i].y + robotPose.robotPositionMean.ptr<double>(1)[0];
         globalPointSets.push_back(cv::Point2d(x,y));
     }
 

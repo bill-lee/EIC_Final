@@ -591,35 +591,35 @@ void EIC_Test::FindCurrentNodeEnd(const cv::Mat &gridMap, double intervalDistanc
 
     cout<<"currentStart"<<currentStart<<" "<<gridMap.cols<<gridMap.rows<<endl;
     cout<<"FinalEnd"<<goal.x<<" "<<goal.y<<endl;
-    int box_size=intervalDistance;  //128 pixels, each pixel*gridsize
-     ///////////// picture oversize constraint
-     for(int i=0;i!=(box_size+1);++i)
-         for(int j=-box_size;j!=(box_size+1);++j)
-         {
-             int x=i+currentStart.x;
-             int y=j+currentStart.y;
+    int box_size = intervalDistance;  //128 pixels, each pixel*gridsize
+    ///////////// picture oversize constraint
+    for(int i=0;i!=(box_size+1);++i)
+        for(int j=-box_size;j!=(box_size+1);++j)
+        {
+            int x=i+currentStart.x;
+            int y=j+currentStart.y;
 
 
-             double temp=gridMap.ptr<uchar>(y)[x];
-             if(temp==253)  //1:occ 127:unknow 253:free
-             {
+            double temp=gridMap.ptr<uchar>(y)[x];
+            if(temp==253)  //1:occ 127:unknow 253:free
+            {
 
-                 double suby=abs((double)goal.y-y);
-                 double subx=abs((double)goal.x-x);
-                 double r=sqrt(pow(subx,2.0)+pow(suby,2.0));
-                   //cout<<r<<" "<<subx<<" "<<suby<<endl;
-                 if(min>r)
-                 {
+                double suby=abs((double)goal.y-y);
+                double subx=abs((double)goal.x-x);
+                double r=sqrt(pow(subx,2.0)+pow(suby,2.0));
+                //cout<<r<<" "<<subx<<" "<<suby<<endl;
+                if(min>r)
+                {
 
 
-                     nodeTemp.x=x;
-                     nodeTemp.y=y;
-                     min=r;
-                 }
+                    nodeTemp.x=x;
+                    nodeTemp.y=y;
+                    min=r;
+                }
 
-             }
+            }
 
-         }
+        }
   //  return cv::Point2d(nodeTemp.x,nodeTemp.y);
 
     currentEnd.x=nodeTemp.x;
@@ -2584,32 +2584,46 @@ void EIC_Test::on_pushButton_23_clicked()
 
 void EIC_Test::on_pushButton_24_clicked()
 {
-    PathPlanning pathplan;
-    ////////////////////////////////////////////////////////////////////////
-    //path planning
-    cv::Mat gridImg = cv::Mat(800, 800, CV_8UC1, cv::Scalar(255));
-//    cv::rectangle(gridImg, cv::Point(200, 200), cv::Point(600, 600), cv::Scalar(0));
-    cv::imshow("show", gridImg);
-    cv::waitKey(1);
-//    cv::Point2d tempEnd;
-    cv::Mat plannignGridMap;
+//    PathPlanning pathplan;
+//    ////////////////////////////////////////////////////////////////////////
+//    //path planning
+////    cv::Mat gridImg = cv::Mat(800, 800, CV_8UC1, cv::Scalar(255));
+    cv::Mat tempimg = cv::imread("./path1.jpg");
+////    cv::rectangle(gridImg, cv::Point(200, 200), cv::Point(600, 600), cv::Scalar(0));
+
+////    cv::Point2d tempEnd;
+//    cv::Mat plannignGridMap;
 //    double search_rect=80;
-    pathplan.SetGridMap(gridImg);
-    cv::Point2d currentStart = cv::Point2d(100, 100);
-    cv::Point2d currentEnd = cv::Point2d(700, 700);
-    pathplan.SetStartNode(currentStart);
-    pathplan.SetEndNode(currentEnd);
+//    pathplan.SetGridMap(gridImg);
+//    cv::Point2d currentStart = cv::Point2d(100, 500);
+//    cv::Point2d currentEnd = cv::Point2d(200, 500);
+//    cv::circle(gridImg, currentStart, 5, cv::Scalar(0, 0, 255));
+//    cv::circle(gridImg, currentEnd, 5, cv::Scalar(0, 0, 255));
 
-    std::vector<cv::Point2d> pathSets;
-    pathplan.AStartPlanning(pathSets);
-    std::cout << "pathSets.size() = " << pathSets.size() << std::endl;
+////    cv::Point2d tempEnd;
+////    this->FindCurrentNodeEnd(plannignGridMap, search_rect, currentStart, currentEnd, tempEnd);
 
-    pathplan.GetPathPlanningMap(plannignGridMap);
+////    cv::circle(gridImg, tempEnd, 5, cv::Scalar(255, 0, 0));
+//    cv::imshow("show", gridImg);
+//    cv::waitKey(1);
 
-    cv::imshow("plan", plannignGridMap);
-    cv::waitKey(1);
-//    cv::circle(plannignGridMap, currentStart, 2, cv::Scalar(255,255,255), -1 );
-//    FindCurrentNodeEnd(plannignGridMap, search_rect, currentStart, currentEnd, tempEnd);
+//    pathplan.SetStartNode(currentStart);
+//    pathplan.SetEndNode(currentEnd);
+
+//    std::vector<cv::Point2d> pathSets;
+//    pathplan.AStartPlanning(pathSets);
+//    std::cout << "pathSets.size() = " << pathSets.size() << std::endl;
+
+//    pathplan.GetPathPlanningMap(plannignGridMap);
+
+//    cv::imshow("plan", plannignGridMap);
+//    cv::waitKey(1);
+
+    AStarPathPlanning astar;
+    astar.SetGridMap(tempimg, 1);
+    std::vector<cv::Point2d> PointSet;
+    astar.run(cv::Point2i(100, 500), cv::Point2i(105, 500), PointSet);
+    std::cout << "PointSet size = " << PointSet.size() << std::endl;
 }
 
 void EIC_Test::on_pushButton_robot_test_clicked()

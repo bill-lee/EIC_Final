@@ -1,5 +1,15 @@
 #ifndef MYEFKSLAM_H
 #define MYEFKSLAM_H
+
+// shih's library
+#include "shih_slam/occupancygridmapping.h"
+#include "shih_slam/landmarkmapping.h"
+#include "shih_slam/lineextraction.h"
+//#include "shih_slam/ekf_slam.h"
+//#include "shih_slam/pathplanning.h"
+#include "astarpathplanning.h"  // Lab405, A Star Path Planning
+#include "shih_slam/cornerextraction.h"
+
 #include "myrobot.h"
 #include <QObject>
 namespace lab405 {
@@ -23,16 +33,19 @@ public:
     // shih's
     OccupancyGridMapping gridMapper;
     LandmarkMapping mapper;
-//    EKF_SLAM EKFRuner;
     LineExtraction lineExtracter;
     CornerExtraction cornerExtractor;
-    PathPlanning planner;
+
     // mytoolkit
     RobotState robotPosition;
+
+    // Lab405
+    AStarPathPlanning planner;
+
     // data member
     std::vector<double> rawLaserScanData;
     cv::Point2d currentStart;
-    cv::Point2d currentEnd;
+    cv::Point2d GoalEnd;
     cv::Point2d FinalEnd;
     std::queue<std::pair<int,double> > commandSets;
     std::vector<cv::Point2d> robotPathSets;
@@ -52,7 +65,7 @@ public:
     inline int GetVelocity(){return robotVelocity; }
     inline int GetRobotWidth(){ return robotWidth;}
 
-    void FindCurrentNodeEnd(const cv::Mat &gridMap,double intervalDistance, const cv::Point2d &currentStart,const cv::Point2d &goal ,cv::Point2d& currentEnd);
+    void FindCurrentNodeEnd(const cv::Mat &gridMap,double intervalDistance, const cv::Point2d &currentStart,const cv::Point2d &goal ,cv::Point2d& GoalEnd);
     void PathSmoothing();
     void TrajectoryGenerationSmoothing();
 
@@ -89,7 +102,7 @@ private:
 
     // Functions
     void MotionPrediction(const double DeltaR, const double DeltaL);
-    void DataAssociation(const std::vector<Line> &obsLineFeature,const std::vector<Corner>& obsCornerFeature);
+    void DataAssociationAndUpdate(const std::vector<Line> &obsLineFeature,const std::vector<Corner>& obsCornerFeature);
     double _MahalanobisDistance(const cv::Mat& mean,const cv::Mat& covariance);
     void Update(const cv::Mat& H,const cv::Mat& innovation,const cv::Mat& innovationCovariance);
     void AddNewLandmark(const Feature& singleFeature);
@@ -122,7 +135,7 @@ private:
     std::list<int>  candidateWeighting;
 
     cv::Mat landMarkImg;
-    cv::Mat gridImg;
+    cv::Mat OccupancyGridMapImg;
     // ???
     int temp_threscont;
     int thresh_count;

@@ -5,6 +5,7 @@
 #include "stepmotor_controller.h"     // lab405 step motor controller
 #include "laser_lms291_controller.h"
 #include "myefkslam.h"
+#include "astarpathplanning.h"
 //#include "myrobot.h"
 #include <QTimer>
 #include <QMessageBox>

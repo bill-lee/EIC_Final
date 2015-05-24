@@ -13,13 +13,7 @@
 
 #include <QTime>                        // for QTime
 
-// shih's library
-#include "shih_slam/occupancygridmapping.h"
-#include "shih_slam/landmarkmapping.h"
-#include "shih_slam/lineextraction.h"
-#include "shih_slam/ekf_slam.h"
-#include "shih_slam/pathplanning.h"
-#include "shih_slam/cornerextraction.h"
+
 
 #include <QMetaType>
 Q_DECLARE_METATYPE(boost::shared_ptr<QByteArray>)
