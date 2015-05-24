@@ -2268,6 +2268,14 @@ void lab405::MyEFKSLAM::NavigationUpdate()
 //    ui->textBrowser_slam->setTextColor( QColor( "red" ) );
 //    ui->textBrowser_slam->append("[pose]:" + QString::number(robotpath1.robotPositionMean.ptr<double>(0)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(1)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(2)[0]));
 
+    // saving
+    robotStateFile
+            << saveFileIndex
+            << " " << RobotStateAfterAdjust.robotPositionMean.at<double>(0)[0]
+            << " " << RobotStateAfterAdjust.robotPositionMean.at<double>(1)[0]
+            << " " << RobotStateAfterAdjust.robotPositionMean.at<double>(2)[0]
+            << std::endl;
+
     std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
 
 //    std::cout << "single step Time:" << total << std::endl;
@@ -2351,6 +2359,7 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         robotOutputFile.open("20150525_EKF_odoFile.txt");
         laserOutputFile.open("20150525_EKF_laserFile.txt");
         robotSceneFile.open("20150525_EKF_sceneData.txt");
+        robotStateFile.open("20150525_EKF_sceneData.txt");
 
         vector<vector<Line>> lines;
         CornerExtraction cornerEx;
@@ -2422,7 +2431,14 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         std::cout << "EKF Intial" <<endl;
         this->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
         this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
-        this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+        this->robotPosition.robotPositionMean.ptr<double>(2)[0]=0;
+
+        robotStateFile << saveFileIndex
+                       << " " << this->robotPosition.robotPositionMean.ptr<double>(0)[0]
+                       << " " << this->robotPosition.robotPositionMean.ptr<double>(1)[0]
+                       << " " << this->robotPosition.robotPositionMean.ptr<double>(2)[0]
+                       << std::endl;
+
         //set start end points
         this->currentStart.x = this->gridMapper.GetGridMapOriginalPoint().x;
         this->currentStart.y = this->gridMapper.GetGridMapOriginalPoint().y;

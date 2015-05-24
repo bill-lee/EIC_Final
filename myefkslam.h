@@ -96,6 +96,7 @@ private:
     std::ofstream robotOutputFile;
     std::ofstream laserOutputFile;
     std::ofstream robotSceneFile;
+    std::ofstream robotStateFile;
     // shih's
     int robotVelocity;
     double robotWidth;  //cm
