@@ -76,10 +76,10 @@ void DCMotor_Controller::RotateRelativeDistancce(int value)
     std::stringstream cmd;
     cmd << "LR" << value << "\n" << "M\r";
     this->write(cmd.str().c_str(), strlen(cmd.str().c_str()));
-    command_queue.push(command::OK);
-    std::cout << "command_queue size = " << command_queue.size() << std::endl;
-    command_queue.push(command::NP);
-    std::cout << "command_queue size = " << command_queue.size() << std::endl;
+//    command_queue.push(command::OK);
+//    std::cout << "command_queue size = " << command_queue.size() << std::endl;
+//    command_queue.push(command::NP);
+//    std::cout << "command_queue size = " << command_queue.size() << std::endl;
 }
 
 void DCMotor_Controller::SetNotifyPosition(double _distance)

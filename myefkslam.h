@@ -23,7 +23,7 @@ public:
               double t = 1.0, double n = 20.0, int weight = 10,
               double _Kr = 3.5, double _Kl = 3.5);
     ~MyEFKSLAM();
-    void Initial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/);
+    void Initial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
     MyRobot *myrobot;
     // connect the block processes
     void Connect();
@@ -112,7 +112,7 @@ private:
     void SetRobotPose(const RobotState& robot);
     void SetMotionCommand();
     void SetMotionCommand2(int type, double value);
-    void ControlMotion(const cv::Point2d& current_start, const cv::Point2d& current_end);
+    void ControlMotion();
 
     // EKF SLAM Data Member
     int landmarkNum;
@@ -143,6 +143,11 @@ private:
     int motionType;  //1: forward 2:right 3:left
     double rightCommand;
     double leftCommand;
+
+    std::size_t num_tP;
+    std::vector<cv::Point2d> tP_set;
+    std::size_t tP_count;
+
 };
 }
 #endif // MYEFKSLAM_H

@@ -24,7 +24,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>7</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -2355,6 +2355,19 @@
            </property>
            <property name="text">
             <string>PushButton</string>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="lineEdit_slam_tPoints">
+           <property name="geometry">
+            <rect>
+             <x>400</x>
+             <y>330</y>
+             <width>113</width>
+             <height>20</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>TransientPoints</string>
            </property>
           </widget>
          </widget>

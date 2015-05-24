@@ -2579,7 +2579,8 @@ void EIC_Test::on_pushButton_23_clicked()
                        ui->spinBox_slam_x0->value(),
                        ui->spinBox_slam_x->value(),
                        ui->spinBox_slam_y->value(),
-                       ui->doubleSpinBox->value());
+                       ui->doubleSpinBox->value(),
+                       ui->lineEdit_slam_tPoints->text().toStdString());
 }
 
 void EIC_Test::on_pushButton_24_clicked()

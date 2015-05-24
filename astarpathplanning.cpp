@@ -187,8 +187,8 @@ bool MapSearchNode::IsGoal(MapSearchNode &nodeGoal)
 
 bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSearchNode *parent_node)
 {
-    std::cout << "GetSuccessors IN!" << std::endl;
-    std::cout << "x = " << x << ", y = " << y << " GetGridMapValue = " << GetGridMapValue( x, y ) << std::endl;
+//    std::cout << "GetSuccessors IN!" << std::endl;
+//    std::cout << "x = " << x << ", y = " << y << " GetGridMapValue = " << GetGridMapValue( x, y ) << std::endl;
     int parent_x = -1;
     int parent_y = -1;
 
@@ -209,7 +209,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x-1) && (parent_y == y))
       )
     {
-        std::cout << "down IN!" << std::endl;
+//        std::cout << "down IN!" << std::endl;
             NewNode = MapSearchNode( x-1, y );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -218,7 +218,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x) && (parent_y == y-1))
       )
     {
-        std::cout << "left IN!" << std::endl;
+//        std::cout << "left IN!" << std::endl;
             NewNode = MapSearchNode( x, y-1 );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -227,7 +227,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x+1) && (parent_y == y))
       )
     {
-        std::cout << "right IN!" << std::endl;
+//        std::cout << "right IN!" << std::endl;
             NewNode = MapSearchNode( x+1, y );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -237,7 +237,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x) && (parent_y == y+1))
             )
     {
-        std::cout << "up IN!" << std::endl;
+//        std::cout << "up IN!" << std::endl;
             NewNode = MapSearchNode( x, y+1 );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -246,7 +246,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x) && (parent_y == y+1))
             )
     {
-        std::cout << "up-left IN!" << std::endl;
+//        std::cout << "up-left IN!" << std::endl;
             NewNode = MapSearchNode( x-1, y-1 );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -256,7 +256,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x) && (parent_y == y+1))
             )
     {
-        std::cout << "down-left IN!" << std::endl;
+//        std::cout << "down-left IN!" << std::endl;
             NewNode = MapSearchNode( x-1, y+1 );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -266,7 +266,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x) && (parent_y == y+1))
             )
     {
-        std::cout << "up-right IN!" << std::endl;
+//        std::cout << "up-right IN!" << std::endl;
             NewNode = MapSearchNode( x+1, y-1 );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -274,7 +274,7 @@ bool MapSearchNode::GetSuccessors(AStarSearch<MapSearchNode> *astarsearch, MapSe
             && !((parent_x == x) && (parent_y == y+1))
             )
     {
-        std::cout << "down-right IN!" << std::endl;
+//        std::cout << "down-right IN!" << std::endl;
             NewNode = MapSearchNode( x+1, y+1 );
             astarsearch->AddSuccessor( NewNode );
     }
@@ -314,7 +314,8 @@ double MapSearchNode::GetGridMapValue(int x1, int y1)
 {
     //free: 0(0~20)  occupy: 255(235~255)  unkown: 127(115~140)
 
-    double num = MapSearchNode::PlanningMap.ptr<uchar>(y1)[3*x1];
+    // default: Single Channel
+    double num = MapSearchNode::PlanningMap.ptr<uchar>(y1)[MapSearchNode::PlanningMap.channels()*x1];
 
 
 //    cv::Mat show = MapSearchNode::PlanningMap.clone();
