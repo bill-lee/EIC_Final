@@ -45,6 +45,7 @@ public:
     // data member
     std::vector<double> rawLaserScanData;
     cv::Point2d currentStart;
+    cv::Point2d pre_start;
     cv::Point2d GoalEnd;
     cv::Point2d FinalEnd;
     std::queue<std::pair<int,double> > commandSets;
@@ -154,6 +155,8 @@ private:
     std::vector<cv::Point2d> tP_set;
     std::size_t tP_count;
     std::size_t navi_count;
+
+    double pre_theta;
 
 };
 }

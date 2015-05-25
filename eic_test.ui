@@ -24,7 +24,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>2</number>
+          <number>4</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -840,7 +840,7 @@
                <double>0.100000000000000</double>
               </property>
               <property name="value">
-               <double>400.000000000000000</double>
+               <double>200.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -866,7 +866,7 @@
                <double>0.100000000000000</double>
               </property>
               <property name="value">
-               <double>1.000000000000000</double>
+               <double>0.500000000000000</double>
               </property>
              </widget>
             </item>
@@ -1485,7 +1485,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>20150504</string>
+            <string>20150525_1_1</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_robot_filename">
@@ -1523,7 +1523,7 @@
             <double>0.100000000000000</double>
            </property>
            <property name="value">
-            <double>300.000000000000000</double>
+            <double>1440.000000000000000</double>
            </property>
           </widget>
           <widget class="QDoubleSpinBox" name="doubleSpinBox_robot_startangle">
@@ -1784,7 +1784,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>0</string>
+            <string>1</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_robot_camera_num">
@@ -1893,7 +1893,7 @@
             </rect>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <item>
             <property name="text">
@@ -2506,7 +2506,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

@@ -2654,7 +2654,7 @@ void EIC_Test::on_pushButton_25_clicked()
 
 void EIC_Test::on_pushButton_slam_navi_clicked()
 {
-    myekfslam->NavigationUpdate(ui->checkBox_slam_navi_scene);
+    myekfslam->NavigationUpdate(ui->checkBox_slam_navi_scene->isChecked());
     ui->textBrowser->append(QString("Do SLAM!"));
 }
 

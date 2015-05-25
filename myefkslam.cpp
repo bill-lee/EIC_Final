@@ -2082,7 +2082,7 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
     double search_rect = 80;
     this->planner.SetGridMap(OccupancyGridMapImg, 1);
     this->planner.GetPathPlanningMap(plannignGridMap);
-    cv::circle(plannignGridMap, this->currentStart, 2, cv::Scalar(255,255,255), -1 );
+//    cv::circle(plannignGridMap, this->currentStart, 2, cv::Scalar(255,255,255), -1 );
     this->FindCurrentNodeEnd(plannignGridMap, search_rect, this->currentStart, this->GoalEnd, tempEnd);
 
     std::cout << "temp end = " << tempEnd << std::endl;
@@ -2215,15 +2215,15 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
 */
 //        ui->textBrowser->append("=====================");
 //        ui->textBrowser->append("[robotPathSets size]:"+QString::number(myekfslam->myrobot->robotPathSets.size()));
-        for(int i = 0;i != this->robotPathSets.size();++i)
-        {
+//        for(int i = 0;i != this->robotPathSets.size();++i)
+//        {
 
-            cv::circle(color_plannignGridMap, cv::Point(this->robotPathSets[i].x, this->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
+//            cv::circle(color_plannignGridMap, cv::Point(this->robotPathSets[i].x, this->robotPathSets[i].y), 4 , cv::Scalar(0,0 ,255), -1  );
 //            ui->textBrowser->setFontWeight( QFont::DemiBold );
 //            ui->textBrowser->setTextColor( QColor( "red" ) );
 //            ui->textBrowser->append("[robotPathSets]:"+QString::number(myekfslam->myrobot->robotPathSets[i].x)+" "+QString::number(myekfslam->myrobot->robotPathSets[i].y));
 
-        }
+//        }
 //        ui->textBrowser->append("=====================");
 //    }
 
@@ -2237,11 +2237,11 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
     // ui->textBrowser->append("=====no path fuck========");
 
 
-        for (int i = 0; i < this->robotPathSets.size(); i++)
-        {
-            std::cout << "x = " << this->robotPathSets.at(i).x
-                      << ", y = " << this->robotPathSets.at(i).y << std::endl;
-        }
+//        for (int i = 0; i < this->robotPathSets.size(); i++)
+//        {
+//            std::cout << "x = " << this->robotPathSets.at(i).x
+//                      << ", y = " << this->robotPathSets.at(i).y << std::endl;
+//        }
         std::cout << "this->currentStart " << this->currentStart << std::endl;
         cv::Mat show = color_plannignGridMap.clone();
         cv::circle(show, this->currentStart, 1, cv::Scalar(0, 0, 255));
@@ -2251,13 +2251,34 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
 
 //    cv::line(color_plannignGridMap, tempEnd, this->GoalEnd, cv::Scalar(0,0,255), 7,CV_AA);
 
+
+
 //    std::cout << "this->currentStart = " << this->currentStart << std::endl;
 //    std::cout << "this->currentEnd = " << this->currentEnd << std::endl;
 //    std::cout << "tempEnd = " << tempEnd << std::endl;
 
 //    ControlMotion(this->currentStart, tempEnd);
 
+        if (saveFileIndex > 4)
+        {
+            cv::line(color_plannignGridMap, this->pre_start, this->currentStart, cv::Scalar(0,0,255), 7,CV_AA);
+            cv::circle(color_plannignGridMap, this->pre_start, 4, cv::Scalar(255,0,0), 2  );
+        }
     cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
+
+    cv::line(color_plannignGridMap, this->currentStart,
+             cv::Point(this->currentStart.x +
+                       10*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0]),
+             this->currentStart.y +
+             10*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])), cv::Scalar(0,255,0), 2,CV_AA);
+    if (saveFileIndex > 4)
+    {
+        cv::line(color_plannignGridMap, this->pre_start, cv::Point(pre_start.x + 10*cos(pre_theta), pre_start.y + 10*sin(pre_theta)), cv::Scalar(255,0,0), 2,CV_AA);
+    }
+
+    this->pre_theta = RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0];
+    this->pre_start = this->currentStart;
+
 //    cv::circle(color_plannignGridMap, this->GoalEnd, 4, cv::Scalar(0,255,0), 2  );
 //    cv::circle(color_plannignGridMap, tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
@@ -2359,7 +2380,7 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         robotOutputFile.open("20150525_EKF_odoFile.txt");
         laserOutputFile.open("20150525_EKF_laserFile.txt");
         robotSceneFile.open("20150525_EKF_sceneData.txt");
-        robotStateFile.open("20150525_EKF_sceneData.txt");
+        robotStateFile.open("20150525_EKF_robotState.txt");
 
         vector<vector<Line>> lines;
         CornerExtraction cornerEx;
@@ -2446,6 +2467,8 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         this->FinalEnd.x = this->gridMapper.GetGridMapOriginalPoint().x + 200;
         this->FinalEnd.y = this->gridMapper.GetGridMapOriginalPoint().y;
 
+
+        this->pre_start = this->gridMapper.GetGridMapOriginalPoint();
 
         this->GoalEnd.x = _slam_x;
         this->GoalEnd.y = _slam_y;
