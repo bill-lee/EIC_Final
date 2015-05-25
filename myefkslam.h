@@ -75,6 +75,9 @@ public:
 
     void NavigationInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
 
+    // P Control Test
+    void PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
+
 public slots:
     void Prediction();
 
@@ -82,6 +85,9 @@ public slots:
     void Test(int pos);
 
     void EKFStepExamine();
+
+    // P Control
+    void PControlTest();
 
 signals:
     void MotorStop();

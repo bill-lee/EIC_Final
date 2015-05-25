@@ -2699,3 +2699,8 @@ void EIC_Test::on_pushButton_slam_navi_init_clicked()
                        ui->doubleSpinBox->value(),
                        ui->lineEdit_slam_tPoints->text().toStdString());
 }
+
+void EIC_Test::on_pushButton_slam_p_control_clicked()
+{
+
+}

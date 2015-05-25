@@ -42,6 +42,8 @@ private:   // Y = aX + b, line coeffient
     double b;
 
 };
+
+
 class Corner
 {
 public:
