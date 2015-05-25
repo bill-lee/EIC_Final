@@ -2584,7 +2584,7 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         cv::destroyAllWindows();
 }
 
-void lab405::MyEFKSLAM::PControlInitial()
+void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints)
 {
     //    odoValueCurrent = cv::Point2d(0.0, 0.0); // x:right odo y:left odo
         // shih's EKF slam

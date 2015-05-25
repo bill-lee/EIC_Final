@@ -24,7 +24,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>4</number>
+          <number>7</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -2489,6 +2489,32 @@
             <string>TransientPoints</string>
            </property>
           </widget>
+          <widget class="QPushButton" name="pushButton_slam_p_control">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>210</y>
+             <width>81</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>P Control</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="pushButton_slam_p_init">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>320</y>
+             <width>81</width>
+             <height>61</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Init</string>
+           </property>
+          </widget>
          </widget>
         </widget>
        </item>
@@ -2506,7 +2532,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

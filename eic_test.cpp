@@ -2704,3 +2704,8 @@ void EIC_Test::on_pushButton_slam_p_control_clicked()
 {
 
 }
+
+void EIC_Test::on_pushButton_slam_p_init_clicked()
+{
+
+}
