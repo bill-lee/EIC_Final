@@ -117,7 +117,6 @@ EIC_Test::EIC_Test(QWidget *parent) :
     scenesTimer=new QTimer;
     connect(scenesTimer,SIGNAL(timeout()),this,SLOT(singleSceneAcquisition()));
 
-
 }
 
 EIC_Test::~EIC_Test()
@@ -2707,5 +2706,11 @@ void EIC_Test::on_pushButton_slam_p_control_clicked()
 
 void EIC_Test::on_pushButton_slam_p_init_clicked()
 {
-
+    connect(myekfslam->PcontrolTimer, SIGNAL(timeout()), myekfslam, SLOT(PControlTest()));
+    myekfslam->PControlInitial(ui->spinBox_slam_sceneNum->value(),
+                       ui->spinBox_slam_x0->value(),
+                       ui->spinBox_slam_x->value(),
+                       ui->spinBox_slam_y->value(),
+                       ui->doubleSpinBox->value(),
+                       ui->lineEdit_slam_tPoints->text().toStdString());
 }

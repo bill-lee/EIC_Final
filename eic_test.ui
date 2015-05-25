@@ -2492,8 +2492,8 @@
           <widget class="QPushButton" name="pushButton_slam_p_control">
            <property name="geometry">
             <rect>
-             <x>10</x>
-             <y>210</y>
+             <x>20</x>
+             <y>320</y>
              <width>81</width>
              <height>81</height>
             </rect>
@@ -2505,14 +2505,14 @@
           <widget class="QPushButton" name="pushButton_slam_p_init">
            <property name="geometry">
             <rect>
-             <x>10</x>
-             <y>320</y>
+             <x>20</x>
+             <y>240</y>
              <width>81</width>
              <height>61</height>
             </rect>
            </property>
            <property name="text">
-            <string>Init</string>
+            <string>P Init</string>
            </property>
           </widget>
          </widget>
@@ -2532,7 +2532,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

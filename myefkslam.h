@@ -78,6 +78,8 @@ public:
     // P Control Test
     void PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
 
+    QTimer *PcontrolTimer;
+
 public slots:
     void Prediction();
 

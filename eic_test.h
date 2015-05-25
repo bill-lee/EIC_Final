@@ -237,6 +237,7 @@ private:
     void FindCurrentNodeEnd(const cv::Mat &gridMap,double intervalDistance, const cv::Point2d &currentStart,const cv::Point2d &goal ,cv::Point2d& currentEnd);
 
 
+
 signals:
     void test();
 

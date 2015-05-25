@@ -87,6 +87,8 @@ lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point, i
     landmarkSets.reserve(5000);  //�w���}�]5000��landmark�Ŷ�
     candidateFeatureSets.clear();
     candidateWeighting.clear();
+
+    PcontrolTimer = new QTimer;
 }
 
 lab405::MyEFKSLAM::~MyEFKSLAM()
@@ -2727,7 +2729,7 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         // initial
         this->odoValuePrevious = cv::Point2d(0.0, 0.0);
 
-        this->EKFTimer->start(1000);
+        this->PcontrolTimer->start(1000);
 
         cv::destroyAllWindows();
 }
