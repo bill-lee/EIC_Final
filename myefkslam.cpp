@@ -989,6 +989,17 @@ void lab405::MyEFKSLAM::PControlTest()
     //SLAM_Robot->gridMapper.InsertLocalGridMap();
 
     this->DataAssociationAndUpdate(line, cor);
+
+    for (int i = 0; i < line.size(); i++)
+    {
+        double a = line.at(i).lineMean.ptr<double>(0)[0];
+        double b = line.at(i).lineMean.ptr<double>(1)[0];
+        double cosvalue = (-1)*a/(a*a + 1);
+        double r = abs(b)/(a*a + 1);
+
+        double mytheta = acos(cosvalue);
+        std::cout << "[Debug] Line No." << i << " r = " << r << ", theta = " << mytheta << std::endl;
+    }
     // Get Robot State
     this->robotPosition = this->robotState;
 
@@ -1177,6 +1188,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
     for(int i=0;i!=landmarkSets.size();++i)
     {
 
+        // Green line is landmark Line Features
         mapper.DrawLine(landmarkSets[i],RobotState(),cv::Scalar(0,255,0),1,cv::Point2d(250,250),1,imgg);
 
     }
