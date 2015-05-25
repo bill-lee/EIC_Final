@@ -1036,6 +1036,15 @@ void lab405::MyEFKSLAM::PControlTest()
 
     std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
 
+    ////////////////////////////////////////////////////////////////////////
+    //mapping process
+    // Raw Catesian Map
+    this->mapper.InsertLocalLandmarkMap(LaserCatesianPoints, RobotStateAfterAdjust);
+    landMarkImg = this->mapper.GetLandmarkMap();
+    // draw on landmarkimg
+    this->mapper.DrawRobotPoseWithErrorEllipse(RobotStateAfterAdjust, landMarkImg, true);
+    cv::imshow("landMarkImg",landMarkImg);
+    cv::waitKey(1);
 }
 
 // Propagation the time k state to k + 1 state via motion model
