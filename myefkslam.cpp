@@ -1171,7 +1171,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
     LandmarkMapping mapper;
     cv::Mat imgg(500,500,CV_8UC3);
     imgg=cv::Scalar::all(0);
-    cv::circle(imgg, cv::Point(0+250,0+250), 3, cv::Scalar(255,0,255), 2 );
+    cv::circle(imgg, cv::Point(0 + 250,0 + 250), 3, cv::Scalar(255, 0, 255), 2 );
 
 
     for(int i=0;i!=landmarkSets.size();++i)
@@ -1185,16 +1185,19 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
     cout<<"=================DataAssociation================================"<<endl;
-    vector<bool> obsMatchFlag(obsLineFeature.size()+obsCornerFeature.size(),false);  //match¨ìªº¬°true
-    vector<int> landmarkMatchingNum(obsLineFeature.size()+obsCornerFeature.size(),-1);  //¨Smatch¨ìªº½s¸¹¬°-1
+    // Create Container for match flags
+    vector<bool> obsMatchFlag(obsLineFeature.size() + obsCornerFeature.size(), false);  // match: true
+    // Create Container for match Num (Observed to Map)
+    vector<int> landmarkMatchingNum(obsLineFeature.size() + obsCornerFeature.size(), -1);  // not match, tag as -1
+    // Create Container for Means and Covariance of Observed Features
     vector<Feature> obsFeature;
-    obsFeature.reserve(obsLineFeature.size()+obsCornerFeature.size());
+    obsFeature.reserve(obsLineFeature.size() + obsCornerFeature.size());
 
-    for(int i=0;i!=obsLineFeature.size();++i)
+    for(int i = 0; i != obsLineFeature.size(); ++i)
     {
         Feature temp;
-        temp.featureMean=obsLineFeature[i].lineMean.clone();
-        temp.featureCovariance=obsLineFeature[i].lineCovariance.clone();
+        temp.featureMean = obsLineFeature[i].lineMean.clone();
+        temp.featureCovariance = obsLineFeature[i].lineCovariance.clone();
         temp.SetFeatureType(Line_Feature);
         obsFeature.push_back(temp);
     }
@@ -1209,84 +1212,93 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
         obsFeature.push_back(temp);
     }
 
+    //  Create Container for un-match features
     vector<Feature> newFeature;
     newFeature.reserve(obsLineFeature.size() + obsCornerFeature.size());
 
-   // cout<<"Æ[¹î¯S¼x¼Æ¶q:"<<obsFeature.size()<<endl;
+    cout<<"The Number of Observed Features: "<<obsFeature.size()<<endl;
 
 
-    for(int i=0;i!=obsFeature.size();++i)
+    // Deal with All observed features
+    for(int i = 0; i != obsFeature.size(); ++i)
     {
-        //obsFeature ³o¤@¨B©ÒÂ^¨ú¨ìªº¯S¼x
+        //obsFeature: the Observed Features of this Step
 
         /*
         Feature transferTemp;
       //  Feature gobalLineobs;
-        //±N½u¯S¼xÂà­¼¯S¼x«¬ºA
+        // convert line feature to feature type
         transferTemp.featureMean=obsLineFeature[i].lineMean;
         transferTemp.featureCovariance=obsLineFeature[i].lineCovariance;
         transferTemp.SetFeatureType(Line_Feature);
 
-        //ConvertRobotToWorld(transferTemp,robotState,gobalLineobs);  //§â½u¯S¼x¥Ñ¾÷¾¹¤H®y¼ÐÂà¨ì¥@¬É®y¼Ð¤W
+        //ConvertRobotToWorld(transferTemp,robotState,gobalLineobs);  // from robot coordinate to world coordinate
         */
         cv::Mat H_min, innovation_min, innovationCovariance_min;
 
         double GatingFeature=0;
 
-        if(obsFeature[i].GetFeatureType()==Line_Feature)
-            GatingFeature =gatingLine;
+        // default gl: 0.25, gc: 0
+        if(obsFeature[i].GetFeatureType() == Line_Feature)
+            GatingFeature = gatingLine;
         else
-            GatingFeature =gatingCorner;
+            GatingFeature = gatingCorner;
 
 
-        //±N©Ò¦³Â^¨ú¨ì¯S¼x»P¦a¹Ï¶i¦æ¤Ç°t
-        for(int j=0;j!=landmarkSets.size();++j)
+        // All Observed Features Match with Features of Map
+        for(int j = 0; j != landmarkSets.size(); ++j)
         {
-           if(obsFeature[i].GetFeatureType()!=landmarkSets[i].GetFeatureType())
-               continue;
+            // first filter out type different situation
+            if(obsFeature[i].GetFeatureType()!=landmarkSets[i].GetFeatureType())
+                continue;
 
-           Feature localLandmark;
-           ConvertWorldToRobot(landmarkSets[j],robotState,localLandmark); //±Nlandmark¥Ñ¥@¬É®y¼ÐÂà¨ì¾÷¾¹¤H®y¼Ð¤W
-           //measurement estimation
-           // Jacobian of coordinate transformation between the world frame and the sensor frame
-           cv::Mat H = cv::Mat::zeros(OBS_SIZE, STATE_SIZE + OBS_SIZE*landmarkNum,CV_64F);
-           double x=robotState.robotPositionMean.ptr<double>(0)[0];
-           double y=robotState.robotPositionMean.ptr<double>(1)[0];
-           //landmark¥@¬É®y¼Ðªºr alpha
-           double alpha=landmarkSets[j].featureMean.ptr<double>(1)[0];
+            Feature localLandmark;
+            ConvertWorldToRobot(landmarkSets[j], robotState, localLandmark); // from world coordinate to robot coordinate
+            // measurement estimation
+            // Jacobian of coordinate transformation between the world frame and the sensor frame
+            cv::Mat H = cv::Mat::zeros(OBS_SIZE, STATE_SIZE + OBS_SIZE*landmarkNum,CV_64F);
+            double x = robotState.robotPositionMean.ptr<double>(0)[0];
+            double y = robotState.robotPositionMean.ptr<double>(1)[0];
+            // landmark space: r alpha
+            double alpha = landmarkSets[j].featureMean.ptr<double>(1)[0];
 
-           // covariance
-           H.ptr<double>(0)[0]=-cos(alpha);
-           H.ptr<double>(0)[1]=-sin(alpha);
-           H.ptr<double>(1)[2]=-1;
-           H.ptr<double>(0)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)] = 1;
-           H.ptr<double>(0)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)+1] = x*sin(alpha) - y*cos(alpha);
-           H.ptr<double>(1)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)+1] = 1;
-
-
-            //innovation: r alpha
-
-          // cv::Mat innovation(obsLineFeature[i].lineMean.size(),obsLineFeature[i].lineMean.type());
-           cv::Mat innovation=(obsFeature[i].featureMean-localLandmark.featureMean);
-
-           //normalize
-
-           while(innovation.ptr<double>(1)[0]> CV_PI)
-           {
-               innovation.ptr<double>(1)[0] -= 2*CV_PI;
-           }
-           while(innovation.ptr<double>(1)[0]< -CV_PI)
-           {
-               innovation.ptr<double>(1)[0] += 2*CV_PI;
-           }
-
-           cv::Mat innovationCovariance=H*robotCombinedCovariance*H.t()+obsFeature[i].featureCovariance;
-
-           double gating=_MahalanobisDistance(innovation,innovationCovariance);
+            // covariance
+            H.ptr<double>(0)[0]=-cos(alpha);
+            H.ptr<double>(0)[1]=-sin(alpha);
+            H.ptr<double>(1)[2]=-1;
+            H.ptr<double>(0)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)] = 1;
+            H.ptr<double>(0)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)+1] = x*sin(alpha) - y*cos(alpha);
+            H.ptr<double>(1)[STATE_SIZE + OBS_SIZE*(landmarkNum-1)+1] = 1;
 
 
-           if(gating<=GatingFeature)
-           {
+            // innovation: r alpha
+
+            // cv::Mat innovation(obsLineFeature[i].lineMean.size(),obsLineFeature[i].lineMean.type());
+            cv::Mat innovation=(obsFeature[i].featureMean-localLandmark.featureMean);
+
+            //normalize
+
+            while(innovation.ptr<double>(1)[0]> CV_PI)
+            {
+                innovation.ptr<double>(1)[0] -= 2*CV_PI;
+            }
+            while(innovation.ptr<double>(1)[0]< -CV_PI)
+            {
+                innovation.ptr<double>(1)[0] += 2*CV_PI;
+            }
+
+            cv::Mat innovationCovariance = H*robotCombinedCovariance*H.t() + obsFeature[i].featureCovariance;
+
+            double gating = _MahalanobisDistance(innovation, innovationCovariance);
+
+
+            // line feature debug message
+            if (obsFeature[i].GetFeatureType() == Line_Feature)
+            {
+                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
+            }
+            if(gating <= GatingFeature)
+            {
 
                 H_min=H.clone();
                 innovation_min=innovation.clone();
@@ -1296,7 +1308,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
                 GatingFeature=gating;
                 obsMatchFlag[i]=true;
 
-           }
+            }
 
         }
         if ( obsMatchFlag[i]== true)//match
@@ -1306,28 +1318,30 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
             Feature temp11;
 
 
-            ConvertRobotToWorld(obsFeature[i],robotState,temp11);
+            ConvertRobotToWorld(obsFeature[i], robotState, temp11);
 
-            mapper.DrawLine(landmarkSets[landmarkMatchingNum[i]],RobotState(),cv::Scalar(255,0,0),2,cv::Point2d(250,250),1,imgg);
+            // Blue line is landmark of map
+            mapper.DrawLine(landmarkSets[landmarkMatchingNum[i]], RobotState(),cv::Scalar(255,0,0),2,cv::Point2d(250,250),1,imgg);
+            // Red line is landmark of map
             mapper.DrawLine(temp11,RobotState(),cv::Scalar(0,0,255),2,cv::Point2d(250,250),1,imgg);
 
 
-            cout<<"match¨ì¤F  ²Ä"<<i<<"Æ[¹î»P ²Ä"<<landmarkMatchingNum[i]<<"¦a¹Ï  ¤À¼Æ:"<<endl;
-            cout<<"§ó·s«e"<<robotState.robotPositionMean<<endl;
+            cout << "[Matched!]  No." << i << " Observed Feature with No." << landmarkMatchingNum[i]<<" Map Score:"<<endl;
+            cout<<"Before Update: "<<robotState.robotPositionMean<<endl;
             Update(H_min,innovation_min,innovationCovariance_min);  //kalman filter framework
-            cout<<"§ó·s«á"<<robotState.robotPositionMean<<endl;
+            cout<<"After Update"<<robotState.robotPositionMean<<endl;
 
 
 
             //////////////////////////////////////
-//            count++;
+            //            count++;
 
         }
         else
         {
-            newFeature.push_back(obsFeature[i]);  //¨S¦³match¨ìªº¥i¯à¬°·sªº¯S¼x
-           // cout<<"¥[¤J­Ô¿ï¤H¦W³æ"<<endl;
-           // AddNewLandmark(obsFeature[i]);
+            newFeature.push_back(obsFeature[i]);  // take not match feature as new Landmark
+            // cout<<"Add into Candidates"<<endl;
+            // AddNewLandmark(obsFeature[i]);
         }
 
     }
@@ -1335,10 +1349,10 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
 
-    //feature selection ¨Ï¥Î¯S¼xÂI¿z¿ï
+    //feature selection
     vector<Feature> map;
     FeatureSelection(newFeature,map);
-     //cout<<"·s¼W´X­Ólandmark¼Æ¶q"<<map.size()<<endl;
+     //cout<<"Number of landmark = "<<map.size()<<endl;
     for(int i=0;i!=map.size();++i)
     {
         Feature localTemp;
@@ -1356,22 +1370,24 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
 
-/*
-    cout<<"¼W¥[ªº¼Æ¥Ø:"<<map.size()<<" ¦a¹Ï¼Æ¶q:"<<landmarkSets.size()<<endl;
-    cout<<"¦a¹Ï¯S¼x(¾÷¾¹¤H®y¼Ð)==========="<<endl;
+
+    /*
+    cout<<"Increase Number: "<<map.size()<<" Number of Feature on Map:"<<landmarkSets.size()<<endl;
+    cout<<"Map Features (Robot Coordinate) ==========="<<endl;
     for(int i=0;i!=landmarkSets.size();++i)
     {
         Feature localLandmark;
         ConvertWorldToRobot(landmarkSets[i],robotState,localLandmark);
-        cout<<"²Ä"<<i<<"­Ó:"<<localLandmark.featureMean<<endl;
-        //cout<<"²Ä"<<i<<"­Ó "<<landmarkSets[i].featureMean<<endl;
+        cout<<"No."<<i<<"­ "<<localLandmark.featureMean<<endl;
+//        cout<<"No."<<i<<"­ "<<landmarkSets[i].featureMean<<endl;
     }
     */
 
+
    // cout<<"=========================================================="<<endl;
-   // cout<<"¾÷¾¹¤H§ó·s¦ì¸m"<<endl;
+   // cout<<"Robot State After Update"<<endl;
     //cout<<robotCombinedState<<endl;
-    ///cout<<"¾÷¾¹¤H§ó·s¦ì¸mCovariance"<<endl;
+    ///cout<<"Robot Update Position Covariance"<<endl;
     //cout<<robotCombinedCovariance<<endl;
 }
 
