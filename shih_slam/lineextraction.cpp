@@ -54,13 +54,14 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
 
 Line LineExtraction::_BuildLine(const cv::Point2d &side1, const cv::Point2d &side2)
 {
-
+    // y = ax + b
     double a=0,b=0;
+    // Slope: a
     a=(side1.y-side2.y)/(side1.x-side2.x);
-    b=(side2.y*side1.x-side1.y*side2.x) / (side1.x-side2.x);
-
+    // bring slope into equation
+    // b = y1 - a*x1
+    b=(side1.x*side2.y - side1.y*side2.x) / (side1.x-side2.x);
     return Line(a,b);
-
 }
 
 bool LineExtraction::_FindTheFarthestPoint(const Line &baseLine, const std::vector<cv::Point2d> &PointSite, cv::Point2d &farthestPoint)
@@ -97,7 +98,7 @@ void LineExtraction::_PointsetsCalLinePolarParameter(const std::vector<cv::Point
 {
 
     ////////////////////////////////////////////////////
-    //  一群點使用直角坐標表示求線的參數(老師講義)
+    //  A Group of Catesian Points, to line parameter
     ///////////////////////////////////////////////////
       double temp1=0,temp2=0,temp3=0,temp4=0;
 
@@ -129,28 +130,26 @@ void LineExtraction::_PointsetsCalLinePolarParameter(const std::vector<cv::Point
       X=matrixA.inv()*Y;
 
       ///////////////////////////////////////////
-      //算原點與線段垂直的交點  X.ptr<double>(1)[0]
+      // intersection of origin (0, 0) and  X.ptr<double>(1)[0]
       ///////////////////////////////////////////
       double m2=-1/X.ptr<double>(0)[0];
-      double b2=-m2*0+0;//原點(0,0)
+      double b2=-m2*0+0; // origin (0,0)
       double xx=(b2-X.ptr<double>(1)[0])/(X.ptr<double>(0)[0]-m2);
       double yy=(m2*X.ptr<double>(1)[0]-X.ptr<double>(0)[0]*b2)/(m2-X.ptr<double>(0)[0]);
 
-      cv::Point  pt1,pt2;       //int type point
-      cv::Point2d temp; //轉成極座標
+      cv::Point  pt1,pt2;       // int type point
+      cv::Point2d temp; // polar type
 
       CartesianToPolar(cv::Point2d(xx,yy),temp);
 
 
-      //存取算出線特徵的資訊
-      //a b parameter
+      // a b parameter
       singleLineFeature.SetLineParameter(cv::Point2d(X.ptr<double>(0)[0],X.ptr<double>(1)[0])); //a  b
-      //line mean
+      // line mean
       singleLineFeature.lineMean.ptr<double>(0)[0]=temp.x ;//r phi
       singleLineFeature.lineMean.ptr<double>(1)[0]=temp.y ;
 
-      //line Covariance
-      //線的Covariance要為對角矩陣
+      // line Covariance, diagonal matrix
       singleLineFeature.lineCovariance.ptr<double>(0)[0]=2.0;//2
       singleLineFeature.lineCovariance.ptr<double>(1)[1]=0.025;//0.025
       singleLineFeature.lineCovariance.ptr<double>(0)[1]=0.0;
@@ -158,18 +157,18 @@ void LineExtraction::_PointsetsCalLinePolarParameter(const std::vector<cv::Point
 
 
       //////////////////////////////////////////////////////
-       //把線畫出來
+      // Draw line
       ///////////////////////////////////////////////////
-       double a = cos(temp.y), b = sin(temp.y);
-       xx=xx*0.3+lineImg.cols/2.0;
-       yy=yy*0.3+lineImg.rows/2.0;  //顯示需要---小地圖
+      double a = cos(temp.y), b = sin(temp.y);
+      xx=xx*0.3+lineImg.cols/2.0;
+      yy=yy*0.3+lineImg.rows/2.0;  // for show purpose
 
 
 
-       pt1.x = cvRound(xx + 1000*(-b)); //cvRound 把double變成int
-       pt1.y = cvRound(yy + 1000*(a));
-       pt2.x = cvRound(xx - 1000*(-b));
-       pt2.y = cvRound(yy - 1000*(a));
+      pt1.x = cvRound(xx + 1000*(-b)); //cvRound double to int
+      pt1.y = cvRound(yy + 1000*(a));
+      pt2.x = cvRound(xx - 1000*(-b));
+      pt2.y = cvRound(yy - 1000*(a));
 
       cv::line( lineImg, pt1, pt2, cv::Scalar(0,255,0), 0.5, CV_AA);
 

@@ -992,12 +992,12 @@ void lab405::MyEFKSLAM::PControlTest()
 
     for (int i = 0; i < line.size(); i++)
     {
-        double a = line.at(i).lineMean.ptr<double>(0)[0];
-        double b = line.at(i).lineMean.ptr<double>(1)[0];
-        double cosvalue = (-1)*a/(a*a + 1);
-        double r = abs(b)/(a*a + 1);
+        double r = line.at(i).lineMean.ptr<double>(0)[0];
+        double mytheta = line.at(i).lineMean.ptr<double>(1)[0];
+//        double cosvalue = (-1)*a/(a*a + 1);
+//        double r = abs(b)/(a*a + 1);
 
-        double mytheta = acos(cosvalue);
+//        double mytheta = acos(cosvalue);
         std::cout << "[Debug] Line No." << i << " r = " << r << ", theta = " << mytheta << std::endl;
     }
     // Get Robot State
