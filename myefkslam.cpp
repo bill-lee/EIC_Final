@@ -1036,11 +1036,11 @@ void lab405::MyEFKSLAM::PControlTest()
         point2.rgb = *reinterpret_cast<float*>(&rgb);
         show_cloud->points.push_back(point2);
     }
-    pcl::visualization::CloudViewer viewer("Simple Viewer");
-    viewer.showCloud(cloud_copy);
-    while(!viewer.wasStopped())
-    {
-    }
+//    pcl::visualization::CloudViewer viewer("Simple Viewer");
+//    viewer.showCloud(show_cloud);
+//    while(!viewer.wasStopped())
+//    {
+//    }
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
