@@ -5,6 +5,9 @@
 #include "opencv2/opencv.hpp"
 #include "mytoolkit.h"
 
+#include "pcl/point_cloud.h"    // for pcl::PointCloud
+#include "pcl/point_types.h"    // for pcl::PointXYZ
+
 class LineExtraction
 {
 public:
@@ -16,7 +19,8 @@ public:
     cv::Mat lineImg;
     void SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std::vector<Line>& lineFeature);
     void SetDistanceThreshold(double num){  distanceThreshold=num;  }
-
+    // para.x: rho, para.y: theta
+    static void LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, cv::Point2d& para);
 private:
     double distanceThreshold;  // up to your PointSite
     Line _BuildLine(const cv::Point2d& side1,const cv::Point2d& side2);

@@ -52,6 +52,46 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
 
 }
 
+void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, cv::Point2d &para)
+{
+    std::cout << "cloud.size() = " << cloud->points.size() << std::endl;
+
+    // mean
+    double mean_1_x = 0.0;
+    double mean_1_y = 0.0;
+    int count = 1;
+
+    double varxy_1 = 0.0;
+    double varxx_1 = 0.0;
+
+
+
+    for (int i = 0; i < cloud->points.size(); i++)
+    {
+        mean_1_x = mean_1_x + (cloud->points.at(i).x - mean_1_x)/count;
+        mean_1_y = mean_1_y + (cloud->points.at(i).y - mean_1_y)/count;
+        count++;
+
+        varxy_1 += (cloud->points.at(i).x - mean_1_x)*(cloud->points.at(i).y - mean_1_y);
+        varxx_1 += (cloud->points.at(i).x - mean_1_x)*(cloud->points.at(i).x - mean_1_x);
+
+
+    }
+
+    double m1 = varxy_1/varxx_1;
+
+    // y - y_bar = m(x - x_bar)
+    // to ax + by = c
+    double a =  (-1)*m1;
+    double b = 1;
+    double c = mean_1_y - m1*mean_1_x;
+
+    // rho = c/(a*a + b*b)
+    // theta = acos(a/(a*a + b*b))
+    para.x = abs(c)/(a*a + b*b);
+    para.y = acos(a/(a*a + b*b));
+}
+
 Line LineExtraction::_BuildLine(const cv::Point2d &side1, const cv::Point2d &side2)
 {
     // y = ax + b
