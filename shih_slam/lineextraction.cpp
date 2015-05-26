@@ -72,35 +72,41 @@ void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::Cons
         mean_1_y = mean_1_y + (cloud->points.at(i).y - mean_1_y)/count;
         count++;
 
-        varxy_1 += (cloud->points.at(i).x - mean_1_x)*(cloud->points.at(i).y - mean_1_y);
-        varxx_1 += (cloud->points.at(i).x - mean_1_x)*(cloud->points.at(i).x - mean_1_x);
 
 
     }
-
-    double m1 = varxy_1/varxx_1;
+    count = 1;
+    for (int i = 0; i < cloud->points.size(); i++)
+    {
+        varxy_1 = varxy_1 + (cloud->points.at(i).x - mean_1_x)*(cloud->points.at(i).y - mean_1_y)/count;
+        varxx_1 = varxx_1 + (cloud->points.at(i).x - mean_1_x)*(cloud->points.at(i).x - mean_1_x)/count;
+    }
 
     // y - y_bar = m(x - x_bar)
     // to ax + by = c
-    double a =  (-1)*m1;
-    double b = 1;
-    double c = mean_1_y - m1*mean_1_x;
+    double m1 = varxy_1/varxx_1;
+//    double a =  (-1)*m1;
+//    double b = 1;
+//    double c = mean_1_y - m1*mean_1_x;
 
     // rho = c/(a*a + b*b)
     // theta = acos(a/(a*a + b*b))
-    para.x = abs(c)/(a*a + b*b);
-    para.y = acos(a/(a*a + b*b));
-    while(para.y > CV_PI)
-    {
-        para.y -= 2*CV_PI;
-    }
-    while(para.y < -CV_PI)
-    {
-        para.y += 2*CV_PI;
-    }
+    // use the mean_x, mean_y, varxy, varxx bring into equation
+    // costheta = -varxy/sqrt(varxy*varxy + varxx*varxx)
+    // rho = abs(varxx*mean_y - varxy*mean_x)/sqrt(varxy*varxy + varxx*varxx)
+
+
+    std::cout << "meanx = " << mean_1_x << ", meany = " << mean_1_y << std::endl;
+    std::cout << "m = " << m1 << std::endl;
+    para.x = abs(varxx_1*mean_1_y - varxy_1*mean_1_x)/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1);
+    std::cout << "cos value = " << -varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1) << std::endl;
+    para.y = acos(-varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1));
+
+//    para.x = abs(c)/sqrt(a*a + b*b);
+//    para.y = acos(a/sqrt(a*a + b*b));
 }
 
-void LineExtraction::GetExtractionLinePara(const std::vector<cv::Point2d> &LaserCatesianPoints, cv::Point2d para, bool IsShow)
+void LineExtraction::GetExtractionLinePara(const std::vector<cv::Point2d> &LaserCatesianPoints, cv::Point2d &para, bool IsShow)
 {
     // Line Ransac
     const double ransacDistanceThreshold = 1;

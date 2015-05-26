@@ -27,7 +27,7 @@ public:
     // para.x: rho, para.y: theta
     static void LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, cv::Point2d& para);
 
-    static void GetExtractionLinePara(const std::vector<cv::Point2d>& LaserCatesianPoints, cv::Point2d para, bool IsShow);
+    static void GetExtractionLinePara(const std::vector<cv::Point2d>& LaserCatesianPoints, cv::Point2d& para, bool IsShow);
 
 private:
     double distanceThreshold;  // up to your PointSite

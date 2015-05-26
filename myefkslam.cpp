@@ -983,11 +983,11 @@ void lab405::MyEFKSLAM::PControlTest()
 
     // Navigation Line
     cv::Point2d para;
-    LineExtraction::GetExtractionLinePara(LaserCatesianPoints, para, true);
+    LineExtraction::GetExtractionLinePara(LaserCatesianPoints, para, false);
     std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
     // Control for wall following
-    MotionControl(para, CV_PI/2, 1.6);
+    MotionControl(1.0, para, 0, 5.0, 1.6);
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
@@ -2944,75 +2944,111 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         cv::destroyAllWindows();
 }
 
-void lab405::MyEFKSLAM::MotionControl(const cv::Point2d &para, double FowardAngle, double distance)
+void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance)
 {
+    double FowardAngle = FowardAngledegree*CV_PI/180;
+    double line_theta;
+//    if (para.y < CV_PI/2)
+//    {
+//        line_theta
+//    }
     double diff_theta = para.y - FowardAngle;
     std::cout << "diff_theta: " << diff_theta << std::endl;
 
-    double diff_r = para.x - distance;
-    std::cout << "diff_r: " << diff_r << std::endl;
 
-    if (diff_r > 2) // toward right move
+    if (diff_theta > tolerDegree*CV_PI/180) // Turn Right
     {
-        double diff_r_theta = para.y - (CV_PI/2 - CV_PI/16);
-        if (diff_r_theta > 0.2) // turn right
-        {
-//            std::cout << "Turn Right" << std::endl;
-            myrobot->right_dcmotor->RotateRelativeDistancce(0);
-            myrobot->left_dcmotor->RotateRelativeDistancce(-3000);
-        }
-        else if (diff_r_theta < -0.2)
-        {
-            myrobot->right_dcmotor->RotateRelativeDistancce(3000);
-            myrobot->left_dcmotor->RotateRelativeDistancce(0);
-        }
-        else
-        {
-            myrobot->right_dcmotor->RotateRelativeDistancce(5000);
-            myrobot->left_dcmotor->RotateRelativeDistancce(-5000);
-        }
+        double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
 
+        int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
+
+
+        std::cout << "Turn Right: " << value << std::endl;
+//        myrobot->right_dcmotor->RotateRelativeDistancce(0);
+//        myrobot->right_dcmotor->Stop();
+//        myrobot->left_dcmotor->RotateRelativeDistancce(-value);
     }
-    else if (diff_r < -2)
+    else if (diff_theta < -tolerDegree*CV_PI/180)   // Turn Left
     {
-        double diff_r_theta = para.y - (CV_PI/2 + CV_PI/16);
-        if (diff_r_theta > 0.2) // turn right
-        {
+        double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
+
+        int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
+
+        std::cout << "Turn Left: " << value << std::endl;
+//        myrobot->right_dcmotor->RotateRelativeDistancce(value);
+//        myrobot->left_dcmotor->Stop();;
+    }
+    else // go forward
+    {
+
+        myrobot->right_dcmotor->RotateRelativeDistancce(3000);
+        myrobot->left_dcmotor->RotateRelativeDistancce(-3000);
+    }
+
+//    double diff_r = para.x - distance;
+//    std::cout << "diff_r: " << diff_r << std::endl;
+
+//    if (diff_r > 2) // toward right move
+//    {
+//        double diff_r_theta = para.y - (CV_PI/2 - CV_PI/16);
+//        if (diff_r_theta > 0.2) // turn right
+//        {
+////            std::cout << "Turn Right" << std::endl;
+//            myrobot->right_dcmotor->RotateRelativeDistancce(0);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(-3000);
+//        }
+//        else if (diff_r_theta < -0.2)
+//        {
+//            myrobot->right_dcmotor->RotateRelativeDistancce(3000);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(0);
+//        }
+//        else
+//        {
+//            myrobot->right_dcmotor->RotateRelativeDistancce(5000);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(-5000);
+//        }
+
+//    }
+//    else if (diff_r < -2)
+//    {
+//        double diff_r_theta = para.y - (CV_PI/2 + CV_PI/16);
+//        if (diff_r_theta > 0.2) // turn right
+//        {
+////            std::cout << "Turn Right" << std::endl;
+//            myrobot->right_dcmotor->RotateRelativeDistancce(0);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(-3000);
+//        }
+//        else if (diff_r_theta < -0.2)
+//        {
+//            myrobot->right_dcmotor->RotateRelativeDistancce(3000);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(0);
+//        }
+//        else
+//        {
+//            myrobot->right_dcmotor->RotateRelativeDistancce(5000);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(-5000);
+//        }
+//    }
+//    else
+//    {
+//        if (diff_theta > 0.2) // turn right
+//        {
 //            std::cout << "Turn Right" << std::endl;
-            myrobot->right_dcmotor->RotateRelativeDistancce(0);
-            myrobot->left_dcmotor->RotateRelativeDistancce(-3000);
-        }
-        else if (diff_r_theta < -0.2)
-        {
-            myrobot->right_dcmotor->RotateRelativeDistancce(3000);
-            myrobot->left_dcmotor->RotateRelativeDistancce(0);
-        }
-        else
-        {
-            myrobot->right_dcmotor->RotateRelativeDistancce(5000);
-            myrobot->left_dcmotor->RotateRelativeDistancce(-5000);
-        }
-    }
-    else
-    {
-        if (diff_theta > 0.2) // turn right
-        {
-            std::cout << "Turn Right" << std::endl;
-            myrobot->right_dcmotor->RotateRelativeDistancce(0);
-            myrobot->left_dcmotor->RotateRelativeDistancce(-1000);
-        }
-        else if (diff_theta < -0.2)   // turn left
-        {
-            std::cout << "Turn Left" << std::endl;
-            myrobot->right_dcmotor->RotateRelativeDistancce(1000);
-            myrobot->left_dcmotor->RotateRelativeDistancce(0);
-        }
-        else
-        {
-            myrobot->right_dcmotor->RotateRelativeDistancce(5000);
-            myrobot->left_dcmotor->RotateRelativeDistancce(-5000);
-        }
-    }
+//            myrobot->right_dcmotor->RotateRelativeDistancce(0);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(-1000);
+//        }
+//        else if (diff_theta < -0.2)   // turn left
+//        {
+//            std::cout << "Turn Left" << std::endl;
+//            myrobot->right_dcmotor->RotateRelativeDistancce(1000);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(0);
+//        }
+//        else
+//        {
+//            myrobot->right_dcmotor->RotateRelativeDistancce(5000);
+//            myrobot->left_dcmotor->RotateRelativeDistancce(-5000);
+//        }
+//    }
 
 
 //    if (robotPathSets.size() > 1)
