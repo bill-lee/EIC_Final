@@ -1044,11 +1044,11 @@ void lab405::MyEFKSLAM::PControlTest()
 
     MotionControl(para);
 
-//    pcl::visualization::CloudViewer viewer("Simple Viewer");
-//    viewer.showCloud(show_cloud);
-//    while(!viewer.wasStopped())
-//    {
-//    }
+    pcl::visualization::CloudViewer viewer("Simple Viewer");
+    viewer.showCloud(show_cloud);
+    while(!viewer.wasStopped())
+    {
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
@@ -1059,24 +1059,24 @@ void lab405::MyEFKSLAM::PControlTest()
 
     this->DataAssociationAndUpdate(line, cor);
 
-    cv::Mat show = cv::Mat::zeros(800, 800, CV_8UC3);
-    for (int i = 0; i < line.size(); i++)
-    {
-        double r = line.at(i).lineMean.ptr<double>(0)[0];
-        double mytheta = line.at(i).lineMean.ptr<double>(1)[0];
-//        double cosvalue = (-1)*a/(a*a + 1);
-//        double r = abs(b)/(a*a + 1);
+//    cv::Mat show = cv::Mat::zeros(800, 800, CV_8UC3);
+//    for (int i = 0; i < line.size(); i++)
+//    {
+//        double r = line.at(i).lineMean.ptr<double>(0)[0];
+//        double mytheta = line.at(i).lineMean.ptr<double>(1)[0];
+////        double cosvalue = (-1)*a/(a*a + 1);
+////        double r = abs(b)/(a*a + 1);
 
-//        double mytheta = acos(cosvalue);
-        std::cout << "[Debug] Line No." << i << " r = " << r << ", theta = " << mytheta << std::endl;
-        if (mytheta > 2.8 && mytheta < CV_PI)
-        {
-            cv::circle(show, cv::Point(400, 400), 1, cv::Scalar(0, 255, 0));
-            cv::line(show, cv::Point(400 + r/cos(mytheta), 400), cv::Point(400 + r*cos(mytheta) , 400 - r*sin(mytheta)), cv::Scalar(0, 0, 255));
-            cv::imshow("Line Pic", show);
-            cv::waitKey(1);
-        }
-    }
+////        double mytheta = acos(cosvalue);
+//        std::cout << "[Debug] Line No." << i << " r = " << r << ", theta = " << mytheta << std::endl;
+//        if (mytheta > 2.8 && mytheta < CV_PI)
+//        {
+//            cv::circle(show, cv::Point(400, 400), 1, cv::Scalar(0, 255, 0));
+//            cv::line(show, cv::Point(400 + r/cos(mytheta), 400), cv::Point(400 + r*cos(mytheta) , 400 - r*sin(mytheta)), cv::Scalar(0, 0, 255));
+//            cv::imshow("Line Pic", show);
+//            cv::waitKey(1);
+//        }
+//    }
     // Get Robot State
     this->robotPosition = this->robotState;
 
@@ -2853,7 +2853,7 @@ void lab405::MyEFKSLAM::MotionControl(const cv::Point2d &para)
     double diff_theta = para.y - CV_PI/2;
     std::cout << "diff_theta: " << diff_theta << std::endl;
 
-    double diff_r = para.x - 20;
+    double diff_r = para.x - 1.6;
     std::cout << "diff_r: " << diff_r << std::endl;
 
     if (diff_r > 2) // toward right move

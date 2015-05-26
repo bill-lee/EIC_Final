@@ -2624,10 +2624,10 @@ void EIC_Test::on_pushButton_24_clicked()
     cv::Point right_top(600, 300);
     cv::Point left_down(300, 600);
     cv::Point right_down(600, 600);
-    cv::Rect_ rec1();
-    cv::Rect_ rec1();
-    cv::Rect_ rec1();
-    cv::Rect_ rec1();
+//    cv::Rect_ rec1();
+//    cv::Rect_ rec1();
+//    cv::Rect_ rec1();
+//    cv::Rect_ rec1();
 
     cv::imshow("img", img);
     cv::waitKey(1);
