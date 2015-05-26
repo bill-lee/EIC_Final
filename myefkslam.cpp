@@ -997,9 +997,19 @@ void lab405::MyEFKSLAM::PControlTest()
         point.z = 0;
         cloud_copy->points.push_back(point);
 
-//        pcl::PointXYZRGB
+        pcl::PointXYZRGB point2;
+        point2.x = LaserCatesianPoints.at(i).x;
+        point2.y = LaserCatesianPoints.at(i).y;
+        point2.z = 0;
+
+        uint8_t r = 255;
+        uint8_t g = 255;
+        uint8_t b = 255;
+        // pack r/g/b into rgb
+        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+        point2.rgb = *reinterpret_cast<float*>(&rgb);
+        show_cloud->points.push_back(point2);
     }
-//    pcl::copyPointCloud<pcl::PointXYZ>(*cloud_copy, inliers, *final);
     //  created RandomSampleConsensus object and compute the appropriated model
     pcl::SampleConsensusModelLine<pcl::PointXYZ>::Ptr
             model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZ> (cloud_copy));
@@ -1011,6 +1021,21 @@ void lab405::MyEFKSLAM::PControlTest()
     std::cout << "inliers size = " << inliers.size() << std::endl;
     // copies all inliers of the model computed to another PointCloud
     pcl::copyPointCloud<pcl::PointXYZ>(*cloud_copy, inliers, *final);
+    for (int i = 0; i < final->points.size(); i++)
+    {
+        pcl::PointXYZRGB point2;
+        point2.x = final->points.at(i).x;
+        point2.y = final->points.at(i).y;
+        point2.z = final->points.at(i).z;
+
+        uint8_t r = 255;
+        uint8_t g = 0;
+        uint8_t b = 0;
+        // pack r/g/b into rgb
+        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+        point2.rgb = *reinterpret_cast<float*>(&rgb);
+        show_cloud->points.push_back(point2);
+    }
     pcl::visualization::CloudViewer viewer("Simple Viewer");
     viewer.showCloud(cloud_copy);
     while(!viewer.wasStopped())
