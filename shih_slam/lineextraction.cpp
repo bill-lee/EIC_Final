@@ -159,21 +159,21 @@ void LineExtraction::_PointsetsCalLinePolarParameter(const std::vector<cv::Point
     //////////////////////////////////////////////////////
     // Draw line
     ///////////////////////////////////////////////////
-    double a = cos(temp.y), b = sin(temp.y);
-    xx=xx*0.3+lineImg.cols/2.0;
-    yy=yy*0.3+lineImg.rows/2.0;  // for show purpose
+//    double a = cos(temp.y), b = sin(temp.y);
+//    xx=xx*0.3+lineImg.cols/2.0;
+//    yy=yy*0.3+lineImg.rows/2.0;  // for show purpose
 
 
 
-    pt1.x = cvRound(xx + 1000*(-b)); //cvRound double to int
-    pt1.y = cvRound(yy + 1000*(a));
-    pt2.x = cvRound(xx - 1000*(-b));
-    pt2.y = cvRound(yy - 1000*(a));
+//    pt1.x = cvRound(xx + 1000*(-b)); //cvRound double to int
+//    pt1.y = cvRound(yy + 1000*(a));
+//    pt2.x = cvRound(xx - 1000*(-b));
+//    pt2.y = cvRound(yy - 1000*(a));
 
-    cv::line( lineImg, pt1, pt2, cv::Scalar(0,255,0), 0.5, CV_AA);
+//    cv::line( lineImg, pt1, pt2, cv::Scalar(0,255,0), 0.5, CV_AA);
 
-    cv::imshow("lineImg", lineImg);
-    cv::waitKey(1);
+//    cv::imshow("lineImg", lineImg);
+//    cv::waitKey(1);
 
 }
 

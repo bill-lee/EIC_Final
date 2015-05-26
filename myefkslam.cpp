@@ -990,6 +990,7 @@ void lab405::MyEFKSLAM::PControlTest()
 
     this->DataAssociationAndUpdate(line, cor);
 
+    cv::Mat show = cv::Mat::zeros(800, 800, CV_8UC3);
     for (int i = 0; i < line.size(); i++)
     {
         double r = line.at(i).lineMean.ptr<double>(0)[0];
@@ -999,11 +1000,13 @@ void lab405::MyEFKSLAM::PControlTest()
 
 //        double mytheta = acos(cosvalue);
         std::cout << "[Debug] Line No." << i << " r = " << r << ", theta = " << mytheta << std::endl;
-        cv::Mat show = cv::Mat::zeros(800, 800, CV_8UC3);
-        cv::circle(show, cv::Point(400, 400), 1, cv::Scalar(0, 255, 0));
-        cv::line(show, cv::Point(400 + r/cos(mytheta), 400), cv::Point(400 + r*cos(mytheta) , 400 - r*sin(mytheta)), cv::Scalar(0, 0, 255));
-        cv::imshow("Line Pic", show);
-        cv::waitKey(1);
+        if (mytheta > 2.8 && mytheta < CV_PI)
+        {
+            cv::circle(show, cv::Point(400, 400), 1, cv::Scalar(0, 255, 0));
+            cv::line(show, cv::Point(400 + r/cos(mytheta), 400), cv::Point(400 + r*cos(mytheta) , 400 - r*sin(mytheta)), cv::Scalar(0, 0, 255));
+            cv::imshow("Line Pic", show);
+            cv::waitKey(1);
+        }
     }
     // Get Robot State
     this->robotPosition = this->robotState;
@@ -1339,7 +1342,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
             // Blue line is landmark of map
             mapper.DrawLine(landmarkSets[landmarkMatchingNum[i]], RobotState(),cv::Scalar(255,0,0),2,cv::Point2d(250,250),1,imgg);
-            // Red line is landmark of map
+            // Red line is observed feature
             mapper.DrawLine(temp11,RobotState(),cv::Scalar(0,0,255),2,cv::Point2d(250,250),1,imgg);
 
 
