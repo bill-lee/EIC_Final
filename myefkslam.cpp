@@ -1042,11 +1042,13 @@ void lab405::MyEFKSLAM::PControlTest()
     LineExtraction::LineRhoThetaExtraction(final, para);
     std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
-    pcl::visualization::CloudViewer viewer("Simple Viewer");
-    viewer.showCloud(show_cloud);
-    while(!viewer.wasStopped())
-    {
-    }
+    MotionControl(para);
+
+//    pcl::visualization::CloudViewer viewer("Simple Viewer");
+//    viewer.showCloud(show_cloud);
+//    while(!viewer.wasStopped())
+//    {
+//    }
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
@@ -2844,6 +2846,36 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         this->PcontrolTimer->start(1000);
 
         cv::destroyAllWindows();
+}
+
+void lab405::MyEFKSLAM::MotionControl(const cv::Point2d &para)
+{
+    double diff_theta = para.y - CV_PI;
+    if (diff_theta > 0) // turn right
+    {
+        myrobot->right_dcmotor->RotateRelativeDistancce(0);
+        myrobot->left_dcmotor->RotateRelativeDistancce(-1000);
+    }
+    else    // turn left
+    {
+        myrobot->right_dcmotor->RotateRelativeDistancce(1000);
+        myrobot->left_dcmotor->RotateRelativeDistancce(0);
+    }
+//    if (robotPathSets.size() > 1)
+//    {
+//        cv::Point Dir = robotPathSets.at(1) - this->currentStart;
+//        std::cout << "Dir = " << Dir << std::endl;
+
+//        if (Dir.x == 1 && Dir.y == 0)
+//        {
+//            // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
+//            // calibration coeffient: y = 0.9487x
+//            int value = static_cast<int>((4096*3.333*14)*(gridMapper.GetPixel_meterFactor()/0.325)/(pi)/0.9487);
+//            myrobot->right_dcmotor->RotateRelativeDistancce(value);
+//            myrobot->left_dcmotor->RotateRelativeDistancce((-1)*value);
+//        }
+
+//    }
 }
 
 void lab405::MyEFKSLAM::FindCurrentNodeEnd(const cv::Mat &gridMap, double intervalDistance, const cv::Point2d &currentStart, const cv::Point2d &goal, cv::Point2d &currentEnd)
