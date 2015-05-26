@@ -10,6 +10,9 @@
 #include "astarpathplanning.h"  // Lab405, A Star Path Planning
 #include "shih_slam/cornerextraction.h"
 
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_line.h>
+
 #include "myrobot.h"
 #include <QObject>
 namespace lab405 {

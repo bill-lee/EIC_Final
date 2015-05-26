@@ -981,6 +981,36 @@ void lab405::MyEFKSLAM::PControlTest()
     this->lineExtracter.SplitAndMerge(LaserCatesianPoints,line);
 
 
+
+
+    // Line Ransac
+    const double ransacDistanceThreshold = 0.4;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_copy(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
+    for (int i = 0; i < LaserCatesianPoints.size(); i++)
+    {
+        pcl::PointXYZ point;
+        point.x = LaserCatesianPoints.at(i).x;
+        point.y = LaserCatesianPoints.at(i).y;
+        point.z = 0;
+        cloud_copy->points.push_back(point);
+    }
+    //  created RandomSampleConsensus object and compute the appropriated model
+    pcl::SampleConsensusModelLine<pcl::PointXYZ>::Ptr
+            model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZ> (cloud_copy));
+    pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_l);
+    std::vector<int> inliers;
+    ransac.setDistanceThreshold (ransacDistanceThreshold);
+    ransac.computeModel();
+    ransac.getInliers(inliers);
+    // copies all inliers of the model computed to another PointCloud
+    pcl::copyPointCloud<pcl::PointXYZ>(*cloud_copy, inliers, *final);
+    pcl::visualization::CloudViewer viewer("Simple Viewer");
+    viewer.showCloud(final);
+    while(!viewer.wasStopped())
+    {
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
     // Prediction
