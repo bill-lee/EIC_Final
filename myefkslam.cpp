@@ -1059,6 +1059,7 @@ void lab405::MyEFKSLAM::PControlTest()
 
     this->DataAssociationAndUpdate(line, cor);
 
+    std::cout << "After Data Ass" << std::endl;
 //    cv::Mat show = cv::Mat::zeros(800, 800, CV_8UC3);
 //    for (int i = 0; i < line.size(); i++)
 //    {
@@ -1080,59 +1081,228 @@ void lab405::MyEFKSLAM::PControlTest()
     // Get Robot State
     this->robotPosition = this->robotState;
 
+///////////////////////////////////////////comment
+//    cv::Point3d adjustPose;
+//    adjustPose.x=0;
+//    adjustPose.y=0;
+//    adjustPose.z=0;
+//    ////////////////////////////////////////////////////////////////////////
+//    // robot pose after adjust
+//    RobotState RobotStateAfterAdjust;
 
-    cv::Point3d adjustPose;
-    adjustPose.x=0;
-    adjustPose.y=0;
-    adjustPose.z=0;
-    ////////////////////////////////////////////////////////////////////////
-    // robot pose after adjust
-    RobotState RobotStateAfterAdjust;
+//    RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0] = adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
+//    RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0] = adjustPose.y + this->robotPosition.robotPositionMean.ptr<double>(1)[0];
+//    RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0] = adjustPose.z + this->robotPosition.robotPositionMean.ptr<double>(2)[0];
+//    RobotStateAfterAdjust.robotPositionCovariance = this->robotPosition.robotPositionCovariance.clone();
 
-    RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0] = adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
-    RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0] = adjustPose.y + this->robotPosition.robotPositionMean.ptr<double>(1)[0];
-    RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0] = adjustPose.z + this->robotPosition.robotPositionMean.ptr<double>(2)[0];
-    RobotStateAfterAdjust.robotPositionCovariance = this->robotPosition.robotPositionCovariance.clone();
+//    // xyz project to plane
+//    cv::Point2d imagePose = this->gridMapper.GetRobotCenter(RobotStateAfterAdjust);
 
-    // xyz project to plane
-    cv::Point2d imagePose = this->gridMapper.GetRobotCenter(RobotStateAfterAdjust);
+//    // convert to unit: m
+//    this->currentStart.x = imagePose.x;
+//    this->currentStart.y = imagePose.y;
 
-    // convert to unit: m
-    this->currentStart.x = imagePose.x;
-    this->currentStart.y = imagePose.y;
-
-    // set into combine state
-    this->SetRobotPose(RobotStateAfterAdjust);
-    ///////////////////////////////////// ///////////////////////////////////
+//    // set into combine state
+//    this->SetRobotPose(RobotStateAfterAdjust);
+//    ///////////////////////////////////// ///////////////////////////////////
 
 
-    // add new map
-    // Rotate Laser Points
-    for(int k = 0; k != LaserCatesianPoints.size(); ++k)
-    {
-        double x = LaserCatesianPoints[k].x*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
-                - LaserCatesianPoints[k].y*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
-                + RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0];
-        double y = LaserCatesianPoints[k].x*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
-                + LaserCatesianPoints[k].y*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
-                + RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0];
-        //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
-        this->refenceMap.push_back(cv::Point2d(x,y));
-        //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
+//    // add new map
+//    // Rotate Laser Points
+//    for(int k = 0; k != LaserCatesianPoints.size(); ++k)
+//    {
+//        double x = LaserCatesianPoints[k].x*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+//                - LaserCatesianPoints[k].y*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+//                + RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0];
+//        double y = LaserCatesianPoints[k].x*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+//                + LaserCatesianPoints[k].y*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+//                + RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0];
+//        //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
+//        this->refenceMap.push_back(cv::Point2d(x,y));
+//        //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
 
-    }
+//    }
 
-    std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
+//    std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
 
-    ////////////////////////////////////////////////////////////////////////
-    //mapping process
-    // Raw Catesian Map
-    this->mapper.InsertLocalLandmarkMap(LaserCatesianPoints, RobotStateAfterAdjust);
-    landMarkImg = this->mapper.GetLandmarkMap();
-    // draw on landmarkimg
-    this->mapper.DrawRobotPoseWithErrorEllipse(RobotStateAfterAdjust, landMarkImg, true);
-    cv::imshow("landMarkImg",landMarkImg);
-    cv::waitKey(1);
+//    ////////////////////////////////////////////////////////////////////////
+//    //mapping process
+//    // Raw Catesian Map
+//    this->mapper.InsertLocalLandmarkMap(LaserCatesianPoints, RobotStateAfterAdjust);
+//    landMarkImg = this->mapper.GetLandmarkMap();
+//    // draw on landmarkimg
+//    this->mapper.DrawRobotPoseWithErrorEllipse(RobotStateAfterAdjust, landMarkImg, true);
+//    cv::imshow("landMarkImg",landMarkImg);
+//    cv::waitKey(1);
+    //////////////////////////comment end
+
+
+    //    myekfslam->myrobot->robotPosition=myekfslam->myrobot->EKFRuner.GetRobotPose();
+
+
+    //    std::cout << "after data ass" << std::endl;
+    //    // QMessageBox::information(this, "Error!", "ok1!");
+
+    //    ////////////////////////////////////////////////////////////////////////
+    //    //ICP correction
+    //    vector<cv::Point2d> temp;
+    //    dataConvertRobotToWorld(points, this->robotPosition, temp);
+    //    double percent=0.5;
+    //    cv::Point3d adjustPose=SLAM_Robot->icper.Align(SLAM_Robot->refenceMap,temp,percent);
+
+        cv::Point3d adjustPose;
+        adjustPose.x=0;
+        adjustPose.y=0;
+        adjustPose.z=0;
+        ////////////////////////////////////////////////////////////////////////
+        // robot pose after adjust
+        RobotState RobotStateAfterAdjust;
+
+        RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0] = adjustPose.x + this->robotPosition.robotPositionMean.ptr<double>(0)[0];
+        RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0] = adjustPose.y + this->robotPosition.robotPositionMean.ptr<double>(1)[0];
+        RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0] = adjustPose.z + this->robotPosition.robotPositionMean.ptr<double>(2)[0];
+        RobotStateAfterAdjust.robotPositionCovariance = this->robotPosition.robotPositionCovariance.clone();
+
+        // xyz project to plane
+        cv::Point2d imagePose = this->gridMapper.GetRobotCenter(RobotStateAfterAdjust);
+
+        // convert to unit: m
+        this->currentStart.x = imagePose.x;
+        this->currentStart.y = imagePose.y;
+
+        // set into combine state
+        this->SetRobotPose(RobotStateAfterAdjust);
+        ///////////////////////////////////// ///////////////////////////////////
+
+
+        // add new map
+        // Rotate Laser Points
+        for(int k = 0; k != LaserCatesianPoints.size(); ++k)
+        {
+            double x = LaserCatesianPoints[k].x*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                    - LaserCatesianPoints[k].y*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                    + RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0];
+            double y = LaserCatesianPoints[k].x*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                    + LaserCatesianPoints[k].y*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])
+                    + RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0];
+            //   cv::circle(imgICP, cv::Point(5*x+400,5*y+400), 1, cv::Scalar(255,0,0), -1  );
+            this->refenceMap.push_back(cv::Point2d(x,y));
+            //  cv::circle(imgICP, cv::Point(x/100.0*(1.0/0.05)+500,y/100.0*(1.0/0.05)+500), 1, cv::Scalar(255,0,0), -1  );
+
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        //mapping process
+        // Raw Catesian Map
+        this->mapper.InsertLocalLandmarkMap(LaserCatesianPoints, RobotStateAfterAdjust);
+        landMarkImg = this->mapper.GetLandmarkMap();
+
+        // Grid Map
+        this->gridMapper.InsertLocalGridMap(LaserRawData, RobotStateAfterAdjust);
+        this->gridMapper.GetOccupancyGridMap(OccupancyGridMapImg);
+        // draw on landmarkimg
+        this->mapper.DrawRobotPoseWithErrorEllipse(RobotStateAfterAdjust, landMarkImg, true);
+
+        cv::imshow("Grid Img", OccupancyGridMapImg);
+        cv::waitKey(10);
+
+        ////////////////////////////////////////////////////////////////////////
+        //path planning
+        cv::Point2d tempEnd;
+        cv::Mat plannignGridMap;
+//        double search_rect = 80;
+        this->planner.SetGridMap(OccupancyGridMapImg, 1);
+        this->planner.GetPathPlanningMap(plannignGridMap);
+//        cv::circle(plannignGridMap, this->currentStart, 2, cv::Scalar(255,255,255), -1 );
+//        this->FindCurrentNodeEnd(plannignGridMap, search_rect, this->currentStart, this->GoalEnd, tempEnd);
+
+//        std::cout << "temp end = " << tempEnd << std::endl;
+    //    double rstart=sqrt(pow(this->currentStart.x,2.0) +pow(this->currentStart.y,2.0)  );
+    //    double rend=sqrt(pow(this->GoalEnd.x,2.0) +pow(this->GoalEnd.y,2.0)  );
+    //    double rFinal=sqrt(pow(this->FinalEnd.x,2.0) +pow(this->FinalEnd.y,2.0)  );
+    //    double rTempEnd=sqrt(pow(tempEnd.x,2.0) +pow(tempEnd.y,2.0)  );
+
+        cv::Mat color_plannignGridMap;
+        cv::cvtColor(plannignGridMap,color_plannignGridMap,CV_GRAY2BGR);
+
+
+    //    //////////////////////////////////////////////
+    //    //save file
+    //    robotOutputFile<<DeltaRight<<" "<<DeltaLeft<<endl;
+    //    for(int i=0;i!=myekfslam->myrobot->rawLaserScanData.size();++i)
+    //        laserOutputFile<<myekfslam->myrobot->rawLaserScanData[i]<<" ";
+
+    //    laserOutputFile<<endl;//´«¦æ
+
+
+    //    //////////////////////////////////////////////
+
+    //    if(sceneCnt==sceneNum)  //»`¶°¨ì³õ´º¼Æ
+    //    {
+    //        myekfslam->myrobot->left_dcmotor->Stop();
+    //        myekfslam->myrobot->right_dcmotor->Stop();
+
+    //        collector->SetStopped(true);
+    //        testEKFTimer->stop();
+    //        scenesTimer->stop();
+    //        ui->textBrowser->setFontWeight( QFont::Normal );
+    //        ui->textBrowser->setTextColor( QColor( "blue" ) );
+    //        ui->textBrowser->append("[System Message]:Motor stop!");
+    //        return;
+    //    }
+
+    //    if(robotpath1.robotPositionMean.ptr<double>(0)[0] >= gridDistance*sceneCnt)
+    //        //if(robotpath1.robotPositionMean.ptr<double>(0)[0]>=sceneCnt*5)
+    //    {
+
+    //        checkBit=false;
+
+    //        myekfslam->myrobot->left_dcmotor->Stop();
+    //        myekfslam->myrobot->right_dcmotor->Stop();
+
+    //        collector->SetStopped(true);
+
+    //        motionMode=true;
+    //        ui->pushButton_2->click();
+
+    //        testEKFTimer->stop();
+    //        sceneCnt++;
+    //        //QMessageBox::information(this,"dd","ff");
+    //        cout<<"scen:"<<sceneCnt<<"  robotpose:"<<robotpath1.robotPositionMean<<"   index:"<<saveFileIndex<<endl;
+    //        robotSceneFile<<sceneCnt<<" "<<robotpath1.robotPositionMean.ptr<double>(0)[0]<<" "<<robotpath1.robotPositionMean.ptr<double>(1)[0]<<" "<<robotpath1.robotPositionMean.ptr<double>(2)[0]<<" "<<saveFileIndex<<endl;
+    //        return;
+    //    }
+
+
+        cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
+        cv::circle(color_plannignGridMap, this->GoalEnd, 4, cv::Scalar(0,255,0), 2  );
+        cv::circle(color_plannignGridMap, tempEnd, 4, cv::Scalar(0,255,0), 2  );
+
+    //    clock_t endTime=clock();
+    //    double total=(double)(endTime-startTime)/CLK_TCK;
+
+    //    ui->textBrowser_slam->setFontWeight( QFont::DemiBold );
+    //    ui->textBrowser_slam->setTextColor( QColor( "red" ) );
+    //    ui->textBrowser_slam->append("[pose]:" + QString::number(robotpath1.robotPositionMean.ptr<double>(0)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(1)[0]) + " , " + QString::number(robotpath1.robotPositionMean.ptr<double>(2)[0]));
+
+        std::cout << "[Robot pose]:" << RobotStateAfterAdjust.robotPositionMean << std::endl;
+
+    //    std::cout << "single step Time:" << total << std::endl;
+        cv::imshow("gridImg",OccupancyGridMapImg);
+        cv::imshow("landMarkImg",landMarkImg);
+        cv::imshow("color_plannignGridMap",color_plannignGridMap);
+        cv::imshow("plannignGridMap",plannignGridMap);
+        static int count=0;
+        QString name="Img/"+QString::number(count)+".jpg";
+        cv::imwrite(name.toStdString(),color_plannignGridMap);
+        cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
+        cv::imwrite("Img/gridImg.jpg",OccupancyGridMapImg);
+        cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
+        count++;
+
+        cv::waitKey(1);
+
+
 }
 
 // Propagation the time k state to k + 1 state via motion model
@@ -1382,10 +1552,10 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
             // line feature debug message
-//            if (obsFeature[i].GetFeatureType() == Line_Feature)
-//            {
-//                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
-//            }
+            if (obsFeature[i].GetFeatureType() == Line_Feature)
+            {
+                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
+            }
             if(gating <= GatingFeature)
             {
 
