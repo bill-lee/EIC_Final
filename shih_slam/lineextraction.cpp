@@ -100,79 +100,80 @@ void LineExtraction::_PointsetsCalLinePolarParameter(const std::vector<cv::Point
     ////////////////////////////////////////////////////
     //  A Group of Catesian Points, to line parameter
     ///////////////////////////////////////////////////
-      double temp1=0,temp2=0,temp3=0,temp4=0;
+    double temp1=0,temp2=0,temp3=0,temp4=0;
 
-      for(int i=0;i!=PointSite.size();++i){
-          temp1+=PointSite[i].x;
-          temp2+=PointSite[i].y;
-          temp3+=PointSite[i].x*PointSite[i].x;
-          temp4+=PointSite[i].x*PointSite[i].y;
+    for(int i=0;i!=PointSite.size();++i){
+        temp1+=PointSite[i].x;
+        temp2+=PointSite[i].y;
+        temp3+=PointSite[i].x*PointSite[i].x;
+        temp4+=PointSite[i].x*PointSite[i].y;
 
-       }
+    }
 
-      temp1/=PointSite.size();
-      temp2/=PointSite.size();
-      temp3/=PointSite.size();
-      temp4/=PointSite.size();
+    temp1/=PointSite.size();
+    temp2/=PointSite.size();
+    temp3/=PointSite.size();
+    temp4/=PointSite.size();
 
-      //Y=AX  --->X=A^-1*Y
-      cv::Mat matrixA(2,2, CV_64F),Y(2,1,CV_64F),X(2,1,CV_64F);
+    //Y=AX  --->X=A^-1*Y
+    cv::Mat matrixA(2,2, CV_64F),Y(2,1,CV_64F),X(2,1,CV_64F);
 
-      //row col
-      Y.ptr<double>(0)[0]=temp4;
-      Y.ptr<double>(1)[0]=temp2;
+    //row col
+    Y.ptr<double>(0)[0]=temp4;
+    Y.ptr<double>(1)[0]=temp2;
 
-      matrixA.ptr<double>(0)[0]=temp3;
-      matrixA.ptr<double>(0)[1]=temp1;
-      matrixA.ptr<double>(1)[0]=temp1;
-      matrixA.ptr<double>(1)[1]=1;
+    matrixA.ptr<double>(0)[0]=temp3;
+    matrixA.ptr<double>(0)[1]=temp1;
+    matrixA.ptr<double>(1)[0]=temp1;
+    matrixA.ptr<double>(1)[1]=1;
 
-      X=matrixA.inv()*Y;
+    X=matrixA.inv()*Y;
 
-      ///////////////////////////////////////////
-      // intersection of origin (0, 0) and  X.ptr<double>(1)[0]
-      ///////////////////////////////////////////
-      double m2=-1/X.ptr<double>(0)[0];
-      double b2=-m2*0+0; // origin (0,0)
-      double xx=(b2-X.ptr<double>(1)[0])/(X.ptr<double>(0)[0]-m2);
-      double yy=(m2*X.ptr<double>(1)[0]-X.ptr<double>(0)[0]*b2)/(m2-X.ptr<double>(0)[0]);
+    ///////////////////////////////////////////
+    // intersection of origin (0, 0) and  X.ptr<double>(1)[0]
+    ///////////////////////////////////////////
+    double m2=-1/X.ptr<double>(0)[0];
+    double b2=-m2*0+0; // origin (0,0)
+    double xx=(b2-X.ptr<double>(1)[0])/(X.ptr<double>(0)[0]-m2);
+    double yy=(m2*X.ptr<double>(1)[0]-X.ptr<double>(0)[0]*b2)/(m2-X.ptr<double>(0)[0]);
 
-      cv::Point  pt1,pt2;       // int type point
-      cv::Point2d temp; // polar type
+    cv::Point  pt1,pt2;       // int type point
+    cv::Point2d temp; // polar type
 
-      CartesianToPolar(cv::Point2d(xx,yy),temp);
-
-
-      // a b parameter
-      singleLineFeature.SetLineParameter(cv::Point2d(X.ptr<double>(0)[0],X.ptr<double>(1)[0])); //a  b
-      // line mean
-      singleLineFeature.lineMean.ptr<double>(0)[0]=temp.x ;//r phi
-      singleLineFeature.lineMean.ptr<double>(1)[0]=temp.y ;
-
-      // line Covariance, diagonal matrix
-      singleLineFeature.lineCovariance.ptr<double>(0)[0]=2.0;//2
-      singleLineFeature.lineCovariance.ptr<double>(1)[1]=0.025;//0.025
-      singleLineFeature.lineCovariance.ptr<double>(0)[1]=0.0;
-      singleLineFeature.lineCovariance.ptr<double>(1)[0]=0.0;
+    CartesianToPolar(cv::Point2d(xx,yy),temp);
 
 
-      //////////////////////////////////////////////////////
-      // Draw line
-      ///////////////////////////////////////////////////
-      double a = cos(temp.y), b = sin(temp.y);
-      xx=xx*0.3+lineImg.cols/2.0;
-      yy=yy*0.3+lineImg.rows/2.0;  // for show purpose
+    // a b parameter
+    singleLineFeature.SetLineParameter(cv::Point2d(X.ptr<double>(0)[0],X.ptr<double>(1)[0])); //a  b
+    // line mean
+    singleLineFeature.lineMean.ptr<double>(0)[0]=temp.x ;//r phi
+    singleLineFeature.lineMean.ptr<double>(1)[0]=temp.y ;
+
+    // line Covariance, diagonal matrix
+    singleLineFeature.lineCovariance.ptr<double>(0)[0]=2.0;//2
+    singleLineFeature.lineCovariance.ptr<double>(1)[1]=0.025;//0.025
+    singleLineFeature.lineCovariance.ptr<double>(0)[1]=0.0;
+    singleLineFeature.lineCovariance.ptr<double>(1)[0]=0.0;
+
+
+    //////////////////////////////////////////////////////
+    // Draw line
+    ///////////////////////////////////////////////////
+    double a = cos(temp.y), b = sin(temp.y);
+    xx=xx*0.3+lineImg.cols/2.0;
+    yy=yy*0.3+lineImg.rows/2.0;  // for show purpose
 
 
 
-      pt1.x = cvRound(xx + 1000*(-b)); //cvRound double to int
-      pt1.y = cvRound(yy + 1000*(a));
-      pt2.x = cvRound(xx - 1000*(-b));
-      pt2.y = cvRound(yy - 1000*(a));
+    pt1.x = cvRound(xx + 1000*(-b)); //cvRound double to int
+    pt1.y = cvRound(yy + 1000*(a));
+    pt2.x = cvRound(xx - 1000*(-b));
+    pt2.y = cvRound(yy - 1000*(a));
 
-      cv::line( lineImg, pt1, pt2, cv::Scalar(0,255,0), 0.5, CV_AA);
+    cv::line( lineImg, pt1, pt2, cv::Scalar(0,255,0), 0.5, CV_AA);
 
-
+    cv::imshow("lineImg", lineImg);
+    cv::waitKey(1);
 
 }
 
