@@ -95,23 +95,31 @@ void LandmarkMapping::DrawLine(const Feature &line, const RobotState &robot, con
 
     PolarToCartesian(polarPoint,temp1);
 
-    double a = cos(polarPoint.y+robot.robotPositionMean.ptr<double>(2)[0]), b = sin(polarPoint.y+robot.robotPositionMean.ptr<double>(2)[0]);
+
+    //////////////////////////////////////////////////////////////
+    // combine with robot state
+    // theta
+    double a = cos(polarPoint.y + robot.robotPositionMean.ptr<double>(2)[0]);
+    double b = sin(polarPoint.y + robot.robotPositionMean.ptr<double>(2)[0]);
+    // robot center
+    temp2.x = cos(robot.robotPositionMean.ptr<double>(2)[0])*temp1.x
+            - sin(robot.robotPositionMean.ptr<double>(2)[0])*temp1.y
+            + robot.robotPositionMean.ptr<double>(0)[0];
+    temp2.y = sin(robot.robotPositionMean.ptr<double>(2)[0])*temp1.x
+            + cos(robot.robotPositionMean.ptr<double>(2)[0])*temp1.y
+            + robot.robotPositionMean.ptr<double>(1)[0];
+    // rescaling
+    temp2.x = temp2.x/100.0*(1/pixel_meterFactor*scale)+center.x;
+    temp2.y = temp2.y/100.0*(1/pixel_meterFactor*scale)+center.y;
 
 
-   temp2.x=(cos(robot.robotPositionMean.ptr<double>(2)[0])*temp1.x-sin(robot.robotPositionMean.ptr<double>(2)[0])*temp1.y+robot.robotPositionMean.ptr<double>(0)[0]);
-   temp2.y=(sin(robot.robotPositionMean.ptr<double>(2)[0])*temp1.x+cos(robot.robotPositionMean.ptr<double>(2)[0])*temp1.y+robot.robotPositionMean.ptr<double>(1)[0]);
-
-   temp2.x=temp2.x/100.0*(1/pixel_meterFactor*scale)+center.x;
-   temp2.y=temp2.y/100.0*(1/pixel_meterFactor*scale)+center.y;
-
-
-   pt1.x = cvRound(temp2.x + 1000*(-b)); //cvRound convert double into int
-   pt1.y = cvRound(temp2.y + 1000*(a));
-   pt2.y = cvRound(temp2.y - 1000*(a));
-   pt2.x = cvRound(temp2.x - 1000*(-b));
+    pt1.x = cvRound(temp2.x + 1000*(-b)); //cvRound convert double into int
+    pt1.y = cvRound(temp2.y + 1000*(a));
+    pt2.x = cvRound(temp2.x - 1000*(-b));
+    pt2.y = cvRound(temp2.y - 1000*(a));
 
 
-   cv::line( showImg, pt1, pt2, s1, lineWidth, CV_AA);
+    cv::line( showImg, pt1, pt2, s1, lineWidth, CV_AA);
 
 }
 // used
