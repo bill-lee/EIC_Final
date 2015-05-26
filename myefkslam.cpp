@@ -981,74 +981,13 @@ void lab405::MyEFKSLAM::PControlTest()
     this->lineExtracter.SplitAndMerge(LaserCatesianPoints,line);
 
 
-
-    std::cout << "LaserCatesianPoints size = " << LaserCatesianPoints.size() << std::endl;
-    // Line Ransac
-    const double ransacDistanceThreshold = 1;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_copy(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    show_cloud->points.push_back(pcl::PointXYZRGB(0, 255, 0));
-
-    for (int i = 0; i < LaserCatesianPoints.size(); i++)
-    {
-        pcl::PointXYZ point;
-        point.x = LaserCatesianPoints.at(i).x;
-        point.y = LaserCatesianPoints.at(i).y;
-        point.z = 0;
-        cloud_copy->points.push_back(point);
-
-        pcl::PointXYZRGB point2;
-        point2.x = LaserCatesianPoints.at(i).x;
-        point2.y = LaserCatesianPoints.at(i).y;
-        point2.z = 0;
-
-        uint8_t r = 255;
-        uint8_t g = 255;
-        uint8_t b = 255;
-        // pack r/g/b into rgb
-        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-        point2.rgb = *reinterpret_cast<float*>(&rgb);
-        show_cloud->points.push_back(point2);
-    }
-    //  created RandomSampleConsensus object and compute the appropriated model
-    pcl::SampleConsensusModelLine<pcl::PointXYZ>::Ptr
-            model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZ> (cloud_copy));
-    pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_l);
-    std::vector<int> inliers;
-    ransac.setDistanceThreshold (ransacDistanceThreshold);
-    ransac.computeModel();
-    ransac.getInliers(inliers);
-    std::cout << "inliers size = " << inliers.size() << std::endl;
-    // copies all inliers of the model computed to another PointCloud
-    pcl::copyPointCloud<pcl::PointXYZ>(*cloud_copy, inliers, *final);
-    for (int i = 0; i < final->points.size(); i++)
-    {
-        pcl::PointXYZRGB point2;
-        point2.x = final->points.at(i).x;
-        point2.y = final->points.at(i).y;
-        point2.z = final->points.at(i).z;
-
-        uint8_t r = 255;
-        uint8_t g = 0;
-        uint8_t b = 0;
-        // pack r/g/b into rgb
-        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-        point2.rgb = *reinterpret_cast<float*>(&rgb);
-        show_cloud->points.push_back(point2);
-    }
+    // Navigation Line
     cv::Point2d para;
-    LineExtraction::LineRhoThetaExtraction(final, para);
+    LineExtraction::GetExtractionLinePara(LaserCatesianPoints, para, true);
     std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
-    MotionControl(para);
-
-    pcl::visualization::CloudViewer viewer("Simple Viewer");
-    viewer.showCloud(show_cloud);
-    while(!viewer.wasStopped())
-    {
-    }
+    // Control for wall following
+    MotionControl(para, CV_PI/2, 1.6);
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
@@ -1059,25 +998,6 @@ void lab405::MyEFKSLAM::PControlTest()
 
     this->DataAssociationAndUpdate(line, cor);
 
-    std::cout << "After Data Ass" << std::endl;
-//    cv::Mat show = cv::Mat::zeros(800, 800, CV_8UC3);
-//    for (int i = 0; i < line.size(); i++)
-//    {
-//        double r = line.at(i).lineMean.ptr<double>(0)[0];
-//        double mytheta = line.at(i).lineMean.ptr<double>(1)[0];
-////        double cosvalue = (-1)*a/(a*a + 1);
-////        double r = abs(b)/(a*a + 1);
-
-////        double mytheta = acos(cosvalue);
-//        std::cout << "[Debug] Line No." << i << " r = " << r << ", theta = " << mytheta << std::endl;
-//        if (mytheta > 2.8 && mytheta < CV_PI)
-//        {
-//            cv::circle(show, cv::Point(400, 400), 1, cv::Scalar(0, 255, 0));
-//            cv::line(show, cv::Point(400 + r/cos(mytheta), 400), cv::Point(400 + r*cos(mytheta) , 400 - r*sin(mytheta)), cv::Scalar(0, 0, 255));
-//            cv::imshow("Line Pic", show);
-//            cv::waitKey(1);
-//        }
-//    }
     // Get Robot State
     this->robotPosition = this->robotState;
 
@@ -1174,6 +1094,12 @@ void lab405::MyEFKSLAM::PControlTest()
         this->SetRobotPose(RobotStateAfterAdjust);
         ///////////////////////////////////// ///////////////////////////////////
 
+
+//        AStarPathPlanning astar;
+//        astar.SetGridMap(tempimg, 1);
+//        std::vector<cv::Point2d> PointSet;
+//        astar.run(cv::Point2i(100, 500), cv::Point2i(105, 500), PointSet);
+//        std::cout << "PointSet size = " << PointSet.size() << std::endl;
 
         // add new map
         // Rotate Laser Points
@@ -3018,12 +2944,12 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         cv::destroyAllWindows();
 }
 
-void lab405::MyEFKSLAM::MotionControl(const cv::Point2d &para)
+void lab405::MyEFKSLAM::MotionControl(const cv::Point2d &para, double FowardAngle, double distance)
 {
-    double diff_theta = para.y - CV_PI/2;
+    double diff_theta = para.y - FowardAngle;
     std::cout << "diff_theta: " << diff_theta << std::endl;
 
-    double diff_r = para.x - 1.6;
+    double diff_r = para.x - distance;
     std::cout << "diff_r: " << diff_r << std::endl;
 
     if (diff_r > 2) // toward right move

@@ -83,7 +83,7 @@ public:
 
     QTimer *PcontrolTimer;
 
-    void MotionControl(const cv::Point2d &para);
+    void MotionControl(const cv::Point2d &para, double FowardAngle, double distance);
 
 public slots:
     void Prediction();

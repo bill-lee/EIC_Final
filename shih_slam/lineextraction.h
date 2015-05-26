@@ -8,6 +8,11 @@
 #include "pcl/point_cloud.h"    // for pcl::PointCloud
 #include "pcl/point_types.h"    // for pcl::PointXYZ
 
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_line.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/visualization/cloud_viewer.h>
+
 class LineExtraction
 {
 public:
@@ -21,6 +26,9 @@ public:
     void SetDistanceThreshold(double num){  distanceThreshold=num;  }
     // para.x: rho, para.y: theta
     static void LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, cv::Point2d& para);
+
+    static void GetExtractionLinePara(const std::vector<cv::Point2d>& LaserCatesianPoints, cv::Point2d para, bool IsShow);
+
 private:
     double distanceThreshold;  // up to your PointSite
     Line _BuildLine(const cv::Point2d& side1,const cv::Point2d& side2);

@@ -100,6 +100,80 @@ void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::Cons
     }
 }
 
+void LineExtraction::GetExtractionLinePara(const std::vector<cv::Point2d> &LaserCatesianPoints, cv::Point2d para, bool IsShow)
+{
+    // Line Ransac
+    const double ransacDistanceThreshold = 1;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_copy(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
+
+    // point cloud for show
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+    if (IsShow)
+        show_cloud->points.push_back(pcl::PointXYZRGB(0, 255, 0));
+
+    for (int i = 0; i < LaserCatesianPoints.size(); i++)
+    {
+        pcl::PointXYZ point;
+        point.x = LaserCatesianPoints.at(i).x;
+        point.y = LaserCatesianPoints.at(i).y;
+        point.z = 0;
+        cloud_copy->points.push_back(point);
+
+        if (IsShow)
+        {
+            pcl::PointXYZRGB point2;
+            point2.x = LaserCatesianPoints.at(i).x;
+            point2.y = LaserCatesianPoints.at(i).y;
+            point2.z = 0;
+
+            uint8_t r = 255;
+            uint8_t g = 255;
+            uint8_t b = 255;
+            // pack r/g/b into rgb
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point2.rgb = *reinterpret_cast<float*>(&rgb);
+            show_cloud->points.push_back(point2);
+        }
+    }
+    //  created RandomSampleConsensus object and compute the appropriated model
+    pcl::SampleConsensusModelLine<pcl::PointXYZ>::Ptr
+            model_l(new pcl::SampleConsensusModelLine<pcl::PointXYZ> (cloud_copy));
+    pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_l);
+    std::vector<int> inliers;
+    ransac.setDistanceThreshold (ransacDistanceThreshold);
+    ransac.computeModel();
+    ransac.getInliers(inliers);
+    // copies all inliers of the model computed to another PointCloud
+    pcl::copyPointCloud<pcl::PointXYZ>(*cloud_copy, inliers, *final);
+
+    if (IsShow)
+    {
+        for (int i = 0; i < final->points.size(); i++)
+        {
+            pcl::PointXYZRGB point2;
+            point2.x = final->points.at(i).x;
+            point2.y = final->points.at(i).y;
+            point2.z = final->points.at(i).z;
+
+            uint8_t r = 255;
+            uint8_t g = 0;
+            uint8_t b = 0;
+            // pack r/g/b into rgb
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point2.rgb = *reinterpret_cast<float*>(&rgb);
+            show_cloud->points.push_back(point2);
+        }
+
+        pcl::visualization::CloudViewer viewer("Simple Viewer");
+        viewer.showCloud(show_cloud);
+        while(!viewer.wasStopped())
+        {
+        }
+    }
+    LineExtraction::LineRhoThetaExtraction(final, para);
+}
+
 Line LineExtraction::_BuildLine(const cv::Point2d &side1, const cv::Point2d &side2)
 {
     // y = ax + b
