@@ -2850,14 +2850,17 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
 
 void lab405::MyEFKSLAM::MotionControl(const cv::Point2d &para)
 {
-    double diff_theta = para.y - CV_PI;
+    double diff_theta = para.y - CV_PI/2;
+    std::cout << "diff_theta: " << diff_theta << std::endl;
     if (diff_theta > 0) // turn right
     {
+        std::cout << "Turn Right" << std::endl;
         myrobot->right_dcmotor->RotateRelativeDistancce(0);
         myrobot->left_dcmotor->RotateRelativeDistancce(-1000);
     }
     else    // turn left
     {
+        std::cout << "Turn Left" << std::endl;
         myrobot->right_dcmotor->RotateRelativeDistancce(1000);
         myrobot->left_dcmotor->RotateRelativeDistancce(0);
     }
