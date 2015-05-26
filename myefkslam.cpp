@@ -989,6 +989,8 @@ void lab405::MyEFKSLAM::PControlTest()
     pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
 
+    show_cloud->points.push_back(pcl::PointXYZRGB(0, 255, 0));
+
     for (int i = 0; i < LaserCatesianPoints.size(); i++)
     {
         pcl::PointXYZ point;
@@ -1036,12 +1038,15 @@ void lab405::MyEFKSLAM::PControlTest()
         point2.rgb = *reinterpret_cast<float*>(&rgb);
         show_cloud->points.push_back(point2);
     }
+    cv::Point2d para;
+    LineExtraction::LineRhoThetaExtraction(final, para);
+    std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
-//    pcl::visualization::CloudViewer viewer("Simple Viewer");
-//    viewer.showCloud(show_cloud);
-//    while(!viewer.wasStopped())
-//    {
-//    }
+    pcl::visualization::CloudViewer viewer("Simple Viewer");
+    viewer.showCloud(show_cloud);
+    while(!viewer.wasStopped())
+    {
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
@@ -1375,10 +1380,10 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
             // line feature debug message
-            if (obsFeature[i].GetFeatureType() == Line_Feature)
-            {
-                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
-            }
+//            if (obsFeature[i].GetFeatureType() == Line_Feature)
+//            {
+//                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
+//            }
             if(gating <= GatingFeature)
             {
 

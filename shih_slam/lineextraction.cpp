@@ -90,6 +90,14 @@ void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::Cons
     // theta = acos(a/(a*a + b*b))
     para.x = abs(c)/(a*a + b*b);
     para.y = acos(a/(a*a + b*b));
+    while(para.y > CV_PI)
+    {
+        para.y -= 2*CV_PI;
+    }
+    while(para.y < -CV_PI)
+    {
+        para.y += 2*CV_PI;
+    }
 }
 
 Line LineExtraction::_BuildLine(const cv::Point2d &side1, const cv::Point2d &side2)
