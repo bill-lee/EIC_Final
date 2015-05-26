@@ -61,8 +61,8 @@ void DCMotor_Controller::SetMaxVelocity(double v_rpm)
     std::stringstream cmd;
     cmd << "SP" << v_rpm << "\n";
     this->write(cmd.str().c_str(), strlen(cmd.str().c_str()));
-    command_queue.push(command::OK);
-    std::cout << "command_queue size = " << command_queue.size() << std::endl;
+//    command_queue.push(command::OK);
+//    std::cout << "command_queue size = " << command_queue.size() << std::endl;
 }
 
 void DCMotor_Controller::SetMaxVelocityThread(double v_rpm)

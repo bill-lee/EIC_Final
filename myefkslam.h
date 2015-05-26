@@ -20,7 +20,7 @@ class MyEFKSLAM : public QObject
 {
     Q_OBJECT
 public:
-    MyEFKSLAM(double w = 58.0, int velocity = 30,
+    MyEFKSLAM(double w = 58.0, int velocity = 100,
               const cv::Point2d& point = cv::Point2d (150,500),
               int num = 0, double gl = 0.25, double gc = 0,
               double t = 1.0, double n = 20.0, int weight = 10,

@@ -95,13 +95,23 @@ void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::Cons
     // costheta = -varxy/sqrt(varxy*varxy + varxx*varxx)
     // rho = abs(varxx*mean_y - varxy*mean_x)/sqrt(varxy*varxy + varxx*varxx)
 
-
-    std::cout << "meanx = " << mean_1_x << ", meany = " << mean_1_y << std::endl;
+//    std::cout << "varxy = " << varxy_1 << std::endl;
+//    std::cout << "meanx = " << mean_1_x << ", meany = " << mean_1_y << std::endl;
     std::cout << "m = " << m1 << std::endl;
-    para.x = abs(varxx_1*mean_1_y - varxy_1*mean_1_x)/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1);
-    std::cout << "cos value = " << -varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1) << std::endl;
-    para.y = acos(-varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1));
 
+    para.x = abs(varxx_1*mean_1_y - varxy_1*mean_1_x)/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1);
+//    std::cout << "cos value = " << -varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1) << std::endl;
+    double cosvalue = -varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1);
+    para.y = acos(cosvalue);
+
+    // ??
+    if (cosvalue < 0)
+    {
+        std::cout << "cos < 0, pre_para.y = " << para.y << std::endl;
+        para.y = para.y - CV_PI;
+    }
+
+//    if ()
 //    para.x = abs(c)/sqrt(a*a + b*b);
 //    para.y = acos(a/sqrt(a*a + b*b));
 }

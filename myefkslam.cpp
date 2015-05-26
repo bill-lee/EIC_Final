@@ -987,7 +987,41 @@ void lab405::MyEFKSLAM::PControlTest()
     std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
     // Control for wall following
-    MotionControl(1.0, para, 0, 5.0, 1.6);
+    if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x > 150.0)
+    {
+        std::cout << "Face Wall!" << std::endl;
+        MotionControl(1.0, para, 90, 5.0, 1.6);
+    }
+    else if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x < 150.0)
+    {
+
+        std::cout << "*** Rotate 90 degrees!!!" << std::endl;
+        double angle = 90;
+        this->myrobot->left_dcmotor->Stop();
+
+        // distance between wheels = 0.57m
+        // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
+        // calibration coeffient: y = 0.9487x
+        int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487*2);
+        this->myrobot->right_dcmotor->RotateRelativeDistancce(value);
+
+        int Pos_Stop_error = 10;
+        int fir_pos = myrobot->right_dcmotor->GetPose();
+        int sec_pos = myrobot->right_dcmotor->GetPose();
+        while (abs(sec_pos - fir_pos) > Pos_Stop_error)
+        {
+            fir_pos = sec_pos;
+            sec_pos = myrobot->right_dcmotor->GetPose();
+        }
+
+    }
+    else
+    {
+        std::cout << "Along Wall!" << std::endl;
+        MotionControl(1.0, para, 0, 5.0, 1.6);
+    }
+
+
 
     ////////////////////////////////////////////////////////////////////////
     // motion estimation
@@ -2948,7 +2982,7 @@ void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double
 {
     double FowardAngle = FowardAngledegree*CV_PI/180;
     double line_theta;
-//    if (para.y < CV_PI/2)
+//    if (para.y > CV_PI/2)
 //    {
 //        line_theta
 //    }
@@ -2956,7 +2990,9 @@ void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double
     std::cout << "diff_theta: " << diff_theta << std::endl;
 
 
-    if (diff_theta > tolerDegree*CV_PI/180) // Turn Right
+    double distance_m = 0.1;
+
+    if (diff_theta < -tolerDegree*CV_PI/180) // Turn Right
     {
         double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
 
@@ -2965,24 +3001,30 @@ void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double
 
         std::cout << "Turn Right: " << value << std::endl;
 //        myrobot->right_dcmotor->RotateRelativeDistancce(0);
-//        myrobot->right_dcmotor->Stop();
-//        myrobot->left_dcmotor->RotateRelativeDistancce(-value);
+
+        myrobot->right_dcmotor->Stop();
+//        myrobot->left_dcmotor->SetMaxVelocity(-robotVelocity);
+        myrobot->left_dcmotor->RotateRelativeDistancce(-value);
     }
-    else if (diff_theta < -tolerDegree*CV_PI/180)   // Turn Left
+    else if (diff_theta > tolerDegree*CV_PI/180)   // Turn Left
     {
         double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
 
         int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
 
         std::cout << "Turn Left: " << value << std::endl;
-//        myrobot->right_dcmotor->RotateRelativeDistancce(value);
-//        myrobot->left_dcmotor->Stop();;
+//        myrobot->right_dcmotor->SetMaxVelocity(robotVelocity);
+        myrobot->right_dcmotor->RotateRelativeDistancce(value);
+        myrobot->left_dcmotor->Stop();;
     }
     else // go forward
     {
+        int value = static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi)/0.9487);
 
-        myrobot->right_dcmotor->RotateRelativeDistancce(3000);
-        myrobot->left_dcmotor->RotateRelativeDistancce(-3000);
+//        myrobot->right_dcmotor->SetMaxVelocity(robotVelocity);
+        myrobot->right_dcmotor->RotateRelativeDistancce(value);
+//        myrobot->left_dcmotor->SetMaxVelocity(-robotVelocity);
+        myrobot->left_dcmotor->RotateRelativeDistancce(-value);
     }
 
 //    double diff_r = para.x - distance;
