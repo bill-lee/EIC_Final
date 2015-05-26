@@ -2619,6 +2619,21 @@ void EIC_Test::on_pushButton_24_clicked()
 //    cv::imshow("plan", plannignGridMap);
 //    cv::waitKey(1);
 
+    cv::Mat img = cv::Mat(900, 900, CV_8UC1, cv::Scalar(255));
+    cv::Point left_top(300, 300);
+    cv::Point right_top(600, 300);
+    cv::Point left_down(300, 600);
+    cv::Point right_down(600, 600);
+    cv::Rect_ rec1();
+    cv::Rect_ rec1();
+    cv::Rect_ rec1();
+    cv::Rect_ rec1();
+
+    cv::imshow("img", img);
+    cv::waitKey(1);
+
+
+
     AStarPathPlanning astar;
     astar.SetGridMap(tempimg, 1);
     std::vector<cv::Point2d> PointSet;
