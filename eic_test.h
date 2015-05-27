@@ -188,9 +188,12 @@ private slots:
 
     void on_pushButton_slam_navi_init_clicked();
 
-    void on_pushButton_slam_p_control_clicked();
 
     void on_pushButton_slam_p_init_clicked();
+
+
+    void SceneScan(int scene_count);
+    void on_pushButton_slam_emit_clicked();
 
 private:
     Ui::EIC_Test *ui;

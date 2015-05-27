@@ -116,7 +116,9 @@ EIC_Test::EIC_Test(QWidget *parent) :
 
     scenesTimer=new QTimer;
     connect(scenesTimer,SIGNAL(timeout()),this,SLOT(singleSceneAcquisition()));
-
+    // move to botton
+    connect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), myekfslam, SLOT(FinishSceneAndStartTimer(int)));
+    connect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
 }
 
 EIC_Test::~EIC_Test()
@@ -2662,8 +2664,9 @@ void EIC_Test::on_pushButton_robot_test_clicked()
 
 void EIC_Test::on_pushButton_25_clicked()
 {
-    myekfslam->myrobot->right_dcmotor->SetVelocity(100);
-    myekfslam->myrobot->left_dcmotor->SetVelocity(-100);
+//    myekfslam->myrobot->right_dcmotor->SetVelocity(100);
+//    myekfslam->myrobot->left_dcmotor->SetVelocity(-100);
+    std::cout << 0%4 << std::endl;
 }
 
 void EIC_Test::on_pushButton_slam_navi_clicked()
@@ -2714,11 +2717,6 @@ void EIC_Test::on_pushButton_slam_navi_init_clicked()
                        ui->lineEdit_slam_tPoints->text().toStdString());
 }
 
-void EIC_Test::on_pushButton_slam_p_control_clicked()
-{
-
-}
-
 void EIC_Test::on_pushButton_slam_p_init_clicked()
 {
     connect(myekfslam->PcontrolTimer, SIGNAL(timeout()), myekfslam, SLOT(PControlTest()));
@@ -2727,5 +2725,32 @@ void EIC_Test::on_pushButton_slam_p_init_clicked()
                        ui->spinBox_slam_x->value(),
                        ui->spinBox_slam_y->value(),
                        ui->doubleSpinBox->value(),
-                       ui->lineEdit_slam_tPoints->text().toStdString());
+                               ui->lineEdit_slam_tPoints->text().toStdString());
+}
+
+void EIC_Test::SceneScan(int scene_count)
+{
+    if (!ui->pushButton_robot_connect->isVisible())
+    {
+
+        QString filename = ui->lineEdit_slam_scene_filename->text() + QString("_%1").arg(scene_count);
+        ui->progressBar_robot->setMaximum(ui->doubleSpinBox_robot_laser_count->value() - 1);
+        myekfslam->myrobot->DataAcquisitionConti(ui->doubleSpinBox_robot_startangle->value(),
+                                      int(ui->doubleSpinBox_robot_laser_count->value()),
+                                      ui->doubleSpinBox_robot_endangle->value(),
+                                      filename,
+                                      ui->checkBox_robot_withcolor->isChecked(),
+                                      ui->lineEdit_robot_camera_num->text().toInt());
+    }
+    else
+    {
+        ui->textBrowser->setTextColor(QColor(255, 0, 0));
+        ui->textBrowser->append("Please Connect First!");
+        ui->textBrowser->setTextColor(QColor(0, 0, 0));
+    }
+}
+
+void EIC_Test::on_pushButton_slam_emit_clicked()
+{
+    emit myekfslam->StartSceneScan(ui->spinBox_slam_scene->value());
 }

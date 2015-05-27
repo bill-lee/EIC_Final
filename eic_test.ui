@@ -24,7 +24,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>2</number>
+          <number>3</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -1523,7 +1523,7 @@
             <double>0.100000000000000</double>
            </property>
            <property name="value">
-            <double>1440.000000000000000</double>
+            <double>360.000000000000000</double>
            </property>
           </widget>
           <widget class="QDoubleSpinBox" name="doubleSpinBox_robot_startangle">
@@ -2489,7 +2489,7 @@
             <string>TransientPoints</string>
            </property>
           </widget>
-          <widget class="QPushButton" name="pushButton_slam_p_control">
+          <widget class="QPushButton" name="pushButton_slam_emit">
            <property name="geometry">
             <rect>
              <x>20</x>
@@ -2499,7 +2499,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>P Control</string>
+            <string>Emit!</string>
            </property>
           </widget>
           <widget class="QPushButton" name="pushButton_slam_p_init">
@@ -2513,6 +2513,32 @@
            </property>
            <property name="text">
             <string>P Init</string>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="lineEdit_slam_scene_filename">
+           <property name="geometry">
+            <rect>
+             <x>120</x>
+             <y>20</y>
+             <width>113</width>
+             <height>20</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>20150526</string>
+           </property>
+          </widget>
+          <widget class="QSpinBox" name="spinBox_slam_scene">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>500</y>
+             <width>42</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="value">
+            <number>1</number>
            </property>
           </widget>
          </widget>

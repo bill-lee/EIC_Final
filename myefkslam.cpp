@@ -1,11 +1,13 @@
 #include "myefkslam.h"
 
-lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point, int num, double gl, double gc, double t, double n, int weight, double _Kr, double _Kl)
+double turn_dis[4] = {150, 150, 140, 230};
+
+lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point, int num, double gl, double gc, double t, double n, int weight, double _Kr, double _Kl, double _dis)
     : myrobot(new MyRobot()), EKFTimer(new QTimer),
       robotWidth(w), robotVelocity(velocity), robotMapOrginal(point),
       landmarkNum(num), gatingLine(gl), gatingCorner(gc),
       deltaT(t), newFeatureRadius(n), weighting(weight),
-      Kr(_Kr), Kl(_Kl)
+      Kr(_Kr), Kl(_Kl), scene_between_dis(_dis)
 {
     // establish opencv file stream
     cv::FileStorage loadFile("./camera_calibration.yml", cv::FileStorage::READ);
@@ -977,6 +979,8 @@ void lab405::MyEFKSLAM::PControlTest()
     std::vector<Corner> cor;
     myrobot->laser_slam->GetOneLaserData(LaserRawData);
 
+
+
     this->mapper.RangesDataToPointsData(LaserRawData,LaserCatesianPoints);
     this->lineExtracter.SplitAndMerge(LaserCatesianPoints,line);
 
@@ -986,13 +990,20 @@ void lab405::MyEFKSLAM::PControlTest()
     LineExtraction::GetExtractionLinePara(LaserCatesianPoints, para, false);
     std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
+
+    //150
+    //150
+    //140
+    // 230
+
+
     // Control for wall following
-    if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x > 150.0)
+    if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x > turn_dis[turn_count % 4])
     {
         std::cout << "Face Wall!" << std::endl;
         MotionControl(1.0, para, 90, 5.0, 1.6);
     }
-    else if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x < 150.0)
+    else if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x < turn_dis[turn_count % 4])
     {
 
         std::cout << "*** Rotate 90 degrees!!!" << std::endl;
@@ -1013,12 +1024,13 @@ void lab405::MyEFKSLAM::PControlTest()
             fir_pos = sec_pos;
             sec_pos = myrobot->right_dcmotor->GetPose();
         }
+        turn_count++;
 
     }
     else
     {
         std::cout << "Along Wall!" << std::endl;
-        MotionControl(1.0, para, 0, 5.0, 1.6);
+        MotionControlAlong(1.0, para, 0, 5.0, 1.6);
     }
 
 
@@ -1262,7 +1274,39 @@ void lab405::MyEFKSLAM::PControlTest()
 
         cv::waitKey(1);
 
+        ////////////////////////////////////////////////////////////////////
+        // saving
+        saveFileIndex++;
+        std::cout << "Saving! " << saveFileIndex << std::endl;
+        robotOutputFile << saveFileIndex << " " << odoValueCurrent.x << " " << odoValueCurrent.y;  //encoder
+        laserOutputFile << saveFileIndex << " ";
+        for(int i = 0; i != LaserRawData.size(); ++i)
+            laserOutputFile << LaserRawData[i] << " ";
+        ////////////////////////////////////////////////////////////////////
+        laserOutputFile << std::endl;
 
+        double current_x = RobotStateAfterAdjust.robotPositionMean.ptr<double>(0)[0];
+        double current_y = RobotStateAfterAdjust.robotPositionMean.ptr<double>(1)[0];
+        double scene_distance =
+                sqrt((current_x-robotScenePosition.top().x)*(current_x-robotScenePosition.top().x)
+                + (current_y-robotScenePosition.top().y)*(current_y-robotScenePosition.top().y));
+        if (scene_distance > scene_between_dis)
+        {
+            PcontrolTimer->stop();
+            robotScenePosition.push(cv::Point2d(current_x, current_y));
+            robotOutputFile << " scene!" << std::endl;
+            emit StartSceneScan(scene_count);
+        }
+        robotOutputFile << std::endl;
+
+
+}
+
+void lab405::MyEFKSLAM::FinishSceneAndStartTimer(int size)
+{
+    std::cout << "Start Timer!" << std::endl;
+    scene_count++;
+    this->PcontrolTimer->start(1000);
 }
 
 // Propagation the time k state to k + 1 state via motion model
@@ -1512,10 +1556,10 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
             // line feature debug message
-            if (obsFeature[i].GetFeatureType() == Line_Feature)
-            {
-                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
-            }
+//            if (obsFeature[i].GetFeatureType() == Line_Feature)
+//            {
+//                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
+//            }
             if(gating <= GatingFeature)
             {
 
@@ -2839,11 +2883,14 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         motionMode = false;
         sceneCnt = 0;
         saveFileIndex = 0;
+        turn_count = 0;
         // number of scenes
         sceneNum = _sceneNum;
 
         thresh_count = threshold;
 
+        while (!robotScenePosition.empty())
+            robotScenePosition.pop();
 
         tP_count = 0;
         std::string filename = "./" + filename_tPoints + ".txt";
@@ -2885,9 +2932,9 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
     //    }
     //    std::cout << std::endl;
 
-        robotOutputFile.open("20150503_EKF_odoFile.txt");
-        laserOutputFile.open("20150503_EKF_laserFile.txt");
-        robotSceneFile.open("20150503_EKF_sceneData.txt");
+        robotOutputFile.open("20150526_EKF_odoFile.txt");
+        laserOutputFile.open("20150526_EKF_laserFile.txt");
+        robotSceneFile.open("20150526_EKF_sceneData.txt");
 
         vector<vector<Line>> lines;
         CornerExtraction cornerEx;
@@ -2929,7 +2976,8 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
             //////////////////////////////////////////////
             //save file
             saveFileIndex++;
-            robotOutputFile << 0 << " " << 0 << endl;  //encoder
+            robotOutputFile << saveFileIndex<< " " << 0 << " " << 0  << " scene!" << endl;  //encoder
+            laserOutputFile << saveFileIndex << " ";
             for(int i = 0; i != laserdata.size(); ++i)
                 laserOutputFile << laserdata[i] << " ";
 
@@ -2973,7 +3021,11 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         // initial
         this->odoValuePrevious = cv::Point2d(0.0, 0.0);
 
-        this->PcontrolTimer->start(1000);
+        scene_count = 1;
+        robotScenePosition.push(cv::Point2d(0.0, 0.0));
+        emit StartSceneScan(scene_count);
+//        this->PcontrolTimer->start(1000);
+//        this->PcontrolTimer->stop();
 
         cv::destroyAllWindows();
 }
@@ -2981,7 +3033,7 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
 void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance)
 {
     double FowardAngle = FowardAngledegree*CV_PI/180;
-    double line_theta;
+//    double line_theta;
 //    if (para.y > CV_PI/2)
 //    {
 //        line_theta
@@ -2997,7 +3049,7 @@ void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double
         double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
 
         int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
-
+//        int value = Kp*onedegreevalue;
 
         std::cout << "Turn Right: " << value << std::endl;
 //        myrobot->right_dcmotor->RotateRelativeDistancce(0);
@@ -3011,6 +3063,9 @@ void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double
         double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
 
         int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
+
+//        int value = Kp*onedegreevalue;
+
 
         std::cout << "Turn Left: " << value << std::endl;
 //        myrobot->right_dcmotor->SetMaxVelocity(robotVelocity);
@@ -3107,7 +3162,69 @@ void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double
 //            myrobot->left_dcmotor->RotateRelativeDistancce((-1)*value);
 //        }
 
+    //    }
+}
+
+void lab405::MyEFKSLAM::MotionControlAlong(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance)
+{
+    double FowardAngle = FowardAngledegree*CV_PI/180;
+//    double line_theta;
+//    if (para.y > CV_PI/2)
+//    {
+//        line_theta
 //    }
+    double diff_theta;
+    if (para.y > CV_PI/2)
+    {
+        diff_theta = para.y - FowardAngle - CV_PI;
+    }
+    else
+    {
+        diff_theta = para.y - FowardAngle;
+    }
+//    double diff_theta = para.y - FowardAngle;
+    std::cout << "diff_theta: " << diff_theta << std::endl;
+
+
+    double distance_m = 0.1;
+
+    if (diff_theta < -tolerDegree*CV_PI/180) // Turn Right
+    {
+        double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
+
+        int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
+//        int value = Kp*onedegreevalue;
+
+        std::cout << "Turn Right: " << value << std::endl;
+//        myrobot->right_dcmotor->RotateRelativeDistancce(0);
+
+        myrobot->right_dcmotor->Stop();
+//        myrobot->left_dcmotor->SetMaxVelocity(-robotVelocity);
+        myrobot->left_dcmotor->RotateRelativeDistancce(-value);
+    }
+    else if (diff_theta > tolerDegree*CV_PI/180)   // Turn Left
+    {
+        double onedegreevalue = (4096*3.333*14)*(0.57/0.325)/360/0.9487*2;
+
+        int value = static_cast<int>(Kp*abs(diff_theta)*onedegreevalue*180/CV_PI);
+
+//        int value = Kp*onedegreevalue;
+
+
+        std::cout << "Turn Left: " << value << std::endl;
+//        myrobot->right_dcmotor->SetMaxVelocity(robotVelocity);
+        myrobot->right_dcmotor->RotateRelativeDistancce(value);
+        myrobot->left_dcmotor->Stop();;
+    }
+    else // go forward
+    {
+        int value = static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi)/0.9487);
+
+//        myrobot->right_dcmotor->SetMaxVelocity(robotVelocity);
+        myrobot->right_dcmotor->RotateRelativeDistancce(value);
+//        myrobot->left_dcmotor->SetMaxVelocity(-robotVelocity);
+        myrobot->left_dcmotor->RotateRelativeDistancce(-value);
+    }
 }
 
 void lab405::MyEFKSLAM::FindCurrentNodeEnd(const cv::Mat &gridMap, double intervalDistance, const cv::Point2d &currentStart, const cv::Point2d &goal, cv::Point2d &currentEnd)

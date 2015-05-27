@@ -15,6 +15,7 @@
 
 #include "myrobot.h"
 #include <QObject>
+#include <stack>
 namespace lab405 {
 class MyEFKSLAM : public QObject
 {
@@ -24,7 +25,7 @@ public:
               const cv::Point2d& point = cv::Point2d (150,500),
               int num = 0, double gl = 0.25, double gc = 0,
               double t = 1.0, double n = 20.0, int weight = 10,
-              double _Kr = 3.5, double _Kl = 3.5);
+              double _Kr = 3.5, double _Kl = 3.5, double _dis = 200);
     ~MyEFKSLAM();
     void Initial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
     MyRobot *myrobot;
@@ -85,6 +86,8 @@ public:
 
     void MotionControl(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance);
 
+    void MotionControlAlong(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance);
+
 public slots:
     void Prediction();
 
@@ -96,8 +99,12 @@ public slots:
     // P Control
     void PControlTest();
 
+    void FinishSceneAndStartTimer(int size);
+
 signals:
     void MotorStop();
+
+    void StartSceneScan(int);
 private:
     double gridDistance;
     bool checkBit;
@@ -171,6 +178,11 @@ private:
 
     double pre_theta;
 
+
+    std::size_t turn_count;
+    std::size_t scene_count;
+    std::stack<cv::Point2d> robotScenePosition;
+    double scene_between_dis;
 };
 }
 #endif // MYEFKSLAM_H

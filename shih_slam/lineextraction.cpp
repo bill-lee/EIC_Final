@@ -104,12 +104,13 @@ void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::Cons
     double cosvalue = -varxy_1/sqrt(varxy_1*varxy_1 + varxx_1*varxx_1);
     para.y = acos(cosvalue);
 
+    std::cout << "para.y = " << para.y << std::endl;
     // ??
-    if (cosvalue < 0)
-    {
-        std::cout << "cos < 0, pre_para.y = " << para.y << std::endl;
-        para.y = para.y - CV_PI;
-    }
+//    if (cosvalue < 0)
+//    {
+//        std::cout << "cos < 0, pre_para.y = " << para.y << std::endl;
+//        para.y = para.y - CV_PI;
+//    }
 
 //    if ()
 //    para.x = abs(c)/sqrt(a*a + b*b);
