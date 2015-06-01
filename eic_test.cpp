@@ -2661,12 +2661,15 @@ void EIC_Test::on_pushButton_robot_test_clicked()
 
     std::cout << str << " size = " << count << " num = " << count/361 << std::endl;
 }
-
+double Test[4] = {150, 150, 140, 230};
 void EIC_Test::on_pushButton_25_clicked()
 {
 //    myekfslam->myrobot->right_dcmotor->SetVelocity(100);
 //    myekfslam->myrobot->left_dcmotor->SetVelocity(-100);
-    std::cout << 0%4 << std::endl;
+//    std::cout << 0%4 << std::endl;
+    static int count = 0;
+
+    std::cout << Test[++count%4] << std::endl;
 }
 
 void EIC_Test::on_pushButton_slam_navi_clicked()
@@ -2753,4 +2756,65 @@ void EIC_Test::SceneScan(int scene_count)
 void EIC_Test::on_pushButton_slam_emit_clicked()
 {
     emit myekfslam->StartSceneScan(ui->spinBox_slam_scene->value());
+}
+
+void EIC_Test::on_pushButton_26_clicked()
+{
+    std::vector<double> LaserRawData;
+    std::vector<cv::Point2d> LaserCatesianPoints;
+    std::ifstream infile("./0425SLAM_4.txt");
+    double temp;
+    while(infile >> temp)
+        LaserRawData.push_back(temp);
+    // pi/360
+    double resolution = CV_PI/360;
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr show (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    for(int i = 0; i != LaserRawData.size(); ++i)
+    {
+        double angle = (i*resolution) /*- aperture/2.0*/;
+
+        if(LaserRawData[i] < 2000 && LaserRawData[i] > 30)
+        {
+            double range = LaserRawData[i];
+            double x = range*cos(angle);
+            double y = range*sin(angle);
+            LaserCatesianPoints.push_back(cv::Point2d(x, y));
+            pcl::PointXYZRGB point;
+            point.x = x;
+            point.y = y;
+            point.z = 0;
+
+            uint8_t r = 255;
+            uint8_t g = 255;
+            uint8_t b = 255;
+            // pack r/g/b into rgb
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point.rgb = *reinterpret_cast<float*>(&rgb);
+            show->points.push_back(point);
+        }
+    }
+
+    LineExtraction line_extract;
+    std::vector<Line> line;
+    line_extract.SplitAndMerge(LaserCatesianPoints, line, show);
+
+
+    cv::Mat landmarkMap=cv::Mat(800, 800,CV_8UC3);
+    for(int i=0; i!=LaserCatesianPoints.size(); ++i)
+    {
+        double mx = LaserCatesianPoints.at(i).x/3 + 400;
+        double my = LaserCatesianPoints.at(i).y/3 + 400;
+
+        cv::circle(landmarkMap , cv::Point(mx,my), 1, cv::Scalar(255,255,255), -1  );
+    }
+    cv::imshow("landmark", landmarkMap);
+    cv::waitKey(1);
+    std::cout << "line = " << line.size() << std::endl;
+    pcl::visualization::CloudViewer viewer("simple viewer");
+    viewer.showCloud(show);
+    while(!viewer.wasStopped())
+    {
+    }
 }

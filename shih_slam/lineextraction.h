@@ -29,7 +29,9 @@ public:
 
     static void GetExtractionLinePara(const std::vector<cv::Point2d>& LaserCatesianPoints, cv::Point2d& para, bool IsShow);
 
+    void SplitAndMerge(const std::vector<cv::Point2d> &PointSite, std::vector<Line> &lineFeature, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
 private:
+    // distance threshold for straight line
     double distanceThreshold;  // up to your PointSite
     Line _BuildLine(const cv::Point2d& side1,const cv::Point2d& side2);
     bool _FindTheFarthestPoint(const Line &baseLine, const std::vector<cv::Point2d> &PointSite,cv::Point2d& farthestPoint);

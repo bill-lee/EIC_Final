@@ -52,6 +52,75 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
 
 }
 
+void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std::vector<Line>& lineFeature, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
+{
+    // temp member for max distance points
+    cv::Point2d side1(0,0),side2(0,0);
+    double maxDistance=0;
+
+    if(PointSite.size() < 50) // ending condition, with condition of small than 10
+    {
+        return ;
+    }
+
+
+    for (int i=0 ; i<PointSite.size() ; i++) //finding the furthest points
+        for (int j=i+1; j<PointSite.size() ; j++){
+           double D = sqrt( pow(PointSite[i].x-PointSite[j].x,2) + pow(PointSite[i].y-PointSite[j].y,2) );
+           if (D>maxDistance){
+                 side1=cv::Point2d(PointSite[i].x,PointSite[i].y);
+                 side2=cv::Point2d(PointSite[j].x,PointSite[j].y);
+                 maxDistance=D;
+
+           }
+        }
+
+    Line LineA=_BuildLine(side1,side2);  // using farthest two points compute line
+
+    cv::Point2d farthestPoint;
+
+
+    // find farthest point
+    bool findPoint=_FindTheFarthestPoint(LineA,PointSite,farthestPoint);
+
+
+    if(findPoint==false){
+
+        Line temp;
+        _PointsetsCalLinePolarParameter(PointSite,temp);
+        lineFeature.push_back(temp);
+
+        std::cout << "PointSite.size() = " << PointSite.size() << std::endl;
+        for (int i = 0; i < PointSite.size(); i++)
+        {
+            pcl::PointXYZRGB point;
+            point.x = PointSite.at(i).x;
+            point.y = PointSite.at(i).y;
+            point.z = 0;
+
+            uint8_t r = 255;
+            uint8_t g = 0;
+            uint8_t b = 0;
+            // pack r/g/b into rgb
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point.rgb = *reinterpret_cast<float*>(&rgb);
+            cloud->points.push_back(point);
+        }
+        return;
+    }
+    std::vector<cv::Point2d> RightPointSite,LeftPointSite;
+    RightPointSite.reserve(1000);
+    LeftPointSite.reserve(1000);
+
+    _SeparatePoints(LineA,farthestPoint,PointSite,LeftPointSite,RightPointSite);
+
+
+
+    SplitAndMerge(LeftPointSite, lineFeature, cloud);
+    SplitAndMerge(RightPointSite, lineFeature, cloud);
+
+}
+
 void LineExtraction::LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, cv::Point2d &para)
 {
     std::cout << "cloud.size() = " << cloud->points.size() << std::endl;
@@ -217,6 +286,7 @@ bool LineExtraction::_FindTheFarthestPoint(const Line &baseLine, const std::vect
     {
         t=abs(-1*a*(PointSite[i].x)+(PointSite[i].y)-b)/sqrt(pow(a,2)+1);
 
+        //
         if(t>maxDistance && t>this->distanceThreshold){
 
 
@@ -322,7 +392,7 @@ void LineExtraction::_SeparatePoints(const Line &baseLine, const cv::Point2d &fa
     LeltPointSite.clear();
     double temp=0;
     double m2=-1/baseLine.GetLineParameter().x; //a
-   double b2=-m2*farthestPoint.x+farthestPoint.y;
+    double b2=-m2*farthestPoint.x+farthestPoint.y;
 
     for(int i=0;i!=PointSite.size();++i){
         temp=(PointSite[i].x)*m2+b2-(PointSite[i].y);

@@ -195,6 +195,8 @@ private slots:
     void SceneScan(int scene_count);
     void on_pushButton_slam_emit_clicked();
 
+    void on_pushButton_26_clicked();
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;
