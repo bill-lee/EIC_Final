@@ -1008,7 +1008,7 @@ void lab405::MyEFKSLAM::PControlTest()
     {
 
         std::cout << "*** Rotate 90 degrees!!! turn_count = " << turn_count << "turn_dis[] = " << turn_dis[turn_count % 4] << std::endl;
-        this->PcontrolTimer->stop();
+//        this->PcontrolTimer->stop();
         double angle = 90;
         this->myrobot->left_dcmotor->Stop();
 
@@ -1028,9 +1028,18 @@ void lab405::MyEFKSLAM::PControlTest()
         }
 
 
-        turn_count++;
-
-        this->PcontrolTimer->start(1000);
+        // prevent the same place rotate twice
+        double dis_temp =
+                sqrt((this->currentStart.x - pre_turn_pos.x)*
+                     (this->currentStart.x - pre_turn_pos.x) +
+                     (this->currentStart.y - pre_turn_pos.y)*
+                     (this->currentStart.y - pre_turn_pos.y));
+        if (dis_temp > 20.0)
+        {
+            turn_count++;
+            pre_turn_pos = this->currentStart;
+        }
+//        this->PcontrolTimer->start(1000);
     }
     else
     {
@@ -2900,35 +2909,36 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
         // shih's EKF slam
         // EKFtimer flag
 
-        checkBit = true;
-        motionMode = false;
-        sceneCnt = 0;
-        saveFileIndex = 0;
-        turn_count = 0;
-        // number of scenes
-        sceneNum = _sceneNum;
+    pre_turn_pos = cv::Point2d(0.0, 0.0);
+    checkBit = true;
+    motionMode = false;
+    sceneCnt = 0;
+    saveFileIndex = 0;
+    turn_count = 0;
+    // number of scenes
+    sceneNum = _sceneNum;
 
-        thresh_count = threshold;
+    thresh_count = threshold;
 
-        while (!robotScenePosition.empty())
-            robotScenePosition.pop();
+    while (!robotScenePosition.empty())
+        robotScenePosition.pop();
 
-        slam_x = _slam_x;
-        slam_x0 = _slam_x0;
-        slam_y = _slam_y;
+    slam_x = _slam_x;
+    slam_x0 = _slam_x0;
+    slam_y = _slam_y;
 
-        gridDistance = abs(slam_x - slam_x0)/(sceneNum - 1);
-        gridDistance = gridDistance*this->gridMapper.GetPixel_meterFactor()*100;
-        std::cout << "gridDistance:" << gridDistance << std::endl;
+    gridDistance = abs(slam_x - slam_x0)/(sceneNum - 1);
+    gridDistance = gridDistance*this->gridMapper.GetPixel_meterFactor()*100;
+    std::cout << "gridDistance:" << gridDistance << std::endl;
 
-        // intial motor
-        this->myrobot->left_dcmotor->SetHome();
-        this->myrobot->right_dcmotor->SetHome();
-        this->refenceMap.clear();
+    // intial motor
+    this->myrobot->left_dcmotor->SetHome();
+    this->myrobot->right_dcmotor->SetHome();
+    this->refenceMap.clear();
 
-        this->myrobot->laser_slam->DisconnectReadyRead();
+    this->myrobot->laser_slam->DisconnectReadyRead();
 
-        // first,  extract features from environment
+    // first,  extract features from environment
 
 
     //    std::cout << laserdata.size() << std::endl;
@@ -2938,108 +2948,108 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
     //    }
     //    std::cout << std::endl;
 
-        const std::string odo_filename = name + "_EKF_odoFile.txt";
-        const std::string laser_filename = name + "_EKF_laserFile.txt";
+    const std::string odo_filename = name + "_EKF_odoFile.txt";
+    const std::string laser_filename = name + "_EKF_laserFile.txt";
 
-        robotOutputFile.open(odo_filename);
-        laserOutputFile.open(laser_filename);
+    robotOutputFile.open(odo_filename);
+    laserOutputFile.open(laser_filename);
 
-        imgfoldername = QString::fromStdString(name) + "Img";
-        if(!QDir(imgfoldername).exists()) //check folder exist
-            QDir().mkdir(imgfoldername);
+    imgfoldername = QString::fromStdString(name) + "Img";
+    if(!QDir(imgfoldername).exists()) //check folder exist
+        QDir().mkdir(imgfoldername);
 
-        vector<vector<Line>> lines;
-        CornerExtraction cornerEx;
-        // repeat features
-        for(int i = 0; i != 4; ++i)  // 6
-        {
-            std::vector<cv::Point2d> temp1;
-            std::vector<Line> temp2;
-            std::vector<Corner> cor;
-            // triiger one scan
+    vector<vector<Line>> lines;
+    CornerExtraction cornerEx;
+    // repeat features
+    for(int i = 0; i != 4; ++i)  // 6
+    {
+        std::vector<cv::Point2d> temp1;
+        std::vector<Line> temp2;
+        std::vector<Corner> cor;
+        // triiger one scan
 
-            vector<double> laserdata;
-            this->myrobot->laser_slam->GetOneLaserData(laserdata);
-    //        std::cout << "temp size = " << temp.size() << std::endl;
-    //        for (int j = 0; j < temp.size(); j++)
-    //        {
-    //            std::cout << temp.at(j) << " ";
-    //        }
-    //        std::cout <<std::endl;
+        vector<double> laserdata;
+        this->myrobot->laser_slam->GetOneLaserData(laserdata);
+        //        std::cout << "temp size = " << temp.size() << std::endl;
+        //        for (int j = 0; j < temp.size(); j++)
+        //        {
+        //            std::cout << temp.at(j) << " ";
+        //        }
+        //        std::cout <<std::endl;
 
-    //        SLAM_Robot->laserS200->ReadData(temp);
-            if(laserdata.size()==0||i==0)
-                continue;
-            this->mapper.RangesDataToPointsData(laserdata, temp1);
+        //        SLAM_Robot->laserS200->ReadData(temp);
+        if(laserdata.size()==0||i==0)
+            continue;
+        this->mapper.RangesDataToPointsData(laserdata, temp1);
 
-            this->lineExtracter.SplitAndMerge(temp1, temp2);
-            cornerEx.ExtractCorners(laserdata,cor);
+        this->lineExtracter.SplitAndMerge(temp1, temp2);
+        cornerEx.ExtractCorners(laserdata,cor);
 
-            std::cout << "laser points:" << laserdata.size() << "  line num:" << temp2.size() << "  cor num:" << cor.size() << std::endl;
-            cv::Mat img = this->mapper.GetLocalLandmarkMap(temp1,temp2,vector<Corner>());
+        std::cout << "laser points:" << laserdata.size() << "  line num:" << temp2.size() << "  cor num:" << cor.size() << std::endl;
+        cv::Mat img = this->mapper.GetLocalLandmarkMap(temp1,temp2,vector<Corner>());
 
-            cv::Mat img1 = this->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),vector<Corner>());
-            cv::Mat img2 = this->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),cor);
-
-
-            lines.push_back(temp2);
-            this->gridMapper.InsertLocalGridMap(laserdata, cv::Point3d(0,0,0));
-
-            //////////////////////////////////////////////
-            //save file
-            saveFileIndex++;
-            robotOutputFile << saveFileIndex<< " " << 0 << " " << 0  << " scene!" << endl;  //encoder
-            laserOutputFile << saveFileIndex << " ";
-            for(int i = 0; i != laserdata.size(); ++i)
-                laserOutputFile << laserdata[i] << " ";
-
-            laserOutputFile << endl;
+        cv::Mat img1 = this->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),vector<Corner>());
+        cv::Mat img2 = this->mapper.GetLocalLandmarkMap(temp1,std::vector<Line>(),cor);
 
 
-            //////////////////////////////////////////////
-            //for(int i=0;i!=temp.size();++i)
-            // {
-            //  if(temp[i]<=2996)
-            //      cout<<temp[i]<<endl;
-            //}
+        lines.push_back(temp2);
+        this->gridMapper.InsertLocalGridMap(laserdata, cv::Point3d(0,0,0));
 
-            //  cv::Mat tt;
-            // SLAM_Robot->gridMapper.GetLocalGridMap(temp,tt);
-            // cv::imshow("tt",tt);
-            cv::imshow("1341",img);
-            cv::imshow("13411",img1);
-            cv::imshow("13411222 ",cornerEx.cornerImg);
-    //        while(cv::waitKey(10) != 27)
-    //        {
-    //        }
-        }
+        //////////////////////////////////////////////
+        //save file
+        saveFileIndex++;
+        robotOutputFile << saveFileIndex<< " " << 0 << " " << 0  << " scene!" << endl;  //encoder
+        laserOutputFile << saveFileIndex << " ";
+        for(int i = 0; i != laserdata.size(); ++i)
+            laserOutputFile << laserdata[i] << " ";
 
-        this->MapInitial(lines);
-        std::cout << "EKF Intial" <<endl;
-        this->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
-        this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
-        this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
-        //set start end points
-        this->currentStart.x = this->gridMapper.GetGridMapOriginalPoint().x;
-        this->currentStart.y = this->gridMapper.GetGridMapOriginalPoint().y;
-
-        this->FinalEnd.x = this->gridMapper.GetGridMapOriginalPoint().x + 200;
-        this->FinalEnd.y = this->gridMapper.GetGridMapOriginalPoint().y;
+        laserOutputFile << endl;
 
 
-        this->GoalEnd.x = _slam_x;
-        this->GoalEnd.y = _slam_y;
+        //////////////////////////////////////////////
+        //for(int i=0;i!=temp.size();++i)
+        // {
+        //  if(temp[i]<=2996)
+        //      cout<<temp[i]<<endl;
+        //}
 
-        // initial
-        this->odoValuePrevious = cv::Point2d(0.0, 0.0);
+        //  cv::Mat tt;
+        // SLAM_Robot->gridMapper.GetLocalGridMap(temp,tt);
+        // cv::imshow("tt",tt);
+        cv::imshow("1341",img);
+        cv::imshow("13411",img1);
+        cv::imshow("13411222 ",cornerEx.cornerImg);
+        //        while(cv::waitKey(10) != 27)
+        //        {
+        //        }
+    }
 
-        scene_count = 1;
-        robotScenePosition.push(cv::Point2d(0.0, 0.0));
-        emit StartSceneScan(scene_count);
-//        this->PcontrolTimer->start(1000);
-//        this->PcontrolTimer->stop();
+    this->MapInitial(lines);
+    std::cout << "EKF Intial" <<endl;
+    this->robotPosition.robotPositionMean.ptr<double>(0)[0]=0;
+    this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+    this->robotPosition.robotPositionMean.ptr<double>(1)[0]=0;
+    //set start end points
+    this->currentStart.x = this->gridMapper.GetGridMapOriginalPoint().x;
+    this->currentStart.y = this->gridMapper.GetGridMapOriginalPoint().y;
 
-        cv::destroyAllWindows();
+    this->FinalEnd.x = this->gridMapper.GetGridMapOriginalPoint().x + 200;
+    this->FinalEnd.y = this->gridMapper.GetGridMapOriginalPoint().y;
+
+
+    this->GoalEnd.x = _slam_x;
+    this->GoalEnd.y = _slam_y;
+
+    // initial
+    this->odoValuePrevious = cv::Point2d(0.0, 0.0);
+
+    scene_count = 1;
+    robotScenePosition.push(cv::Point2d(0.0, 0.0));
+    emit StartSceneScan(scene_count);
+    //        this->PcontrolTimer->start(1000);
+    //        this->PcontrolTimer->stop();
+
+    cv::destroyAllWindows();
 }
 
 void lab405::MyEFKSLAM::MotionControl(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance)

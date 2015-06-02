@@ -2819,3 +2819,8 @@ void EIC_Test::on_pushButton_26_clicked()
     {
     }
 }
+
+void EIC_Test::on_pushButton_slam_offline_clicked()
+{
+
+}
