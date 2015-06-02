@@ -23,8 +23,8 @@ class MyEFKSLAM : public QObject
 public:
     MyEFKSLAM(double w = 58.0, int velocity = 100,
               const cv::Point2d& point = cv::Point2d (150,500),
-              int num = 0, double gl = 0.25, double gc = 0,
-              double t = 1.0, double n = 20.0, int weight = 10,
+              int num = 0, double gl = 0.25/*0.25*/, double gc = 0,
+              double t = 1.0, double n = 20.0, int weight = 5/*10*/,
               double _Kr = 3.5, double _Kl = 3.5, double _dis = 200);
     ~MyEFKSLAM();
     void Initial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
@@ -80,7 +80,7 @@ public:
     void NavigationInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
 
     // P Control Test
-    void PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints);
+    void PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &name);
 
     QTimer *PcontrolTimer;
 
@@ -116,7 +116,7 @@ private:
     cv::Point2d odoValueCurrent; // x:right odo y:left odo
     std::ofstream robotOutputFile;
     std::ofstream laserOutputFile;
-    std::ofstream robotSceneFile;
+//    std::ofstream robotSceneFile;
     std::ofstream robotStateFile;
     // shih's
     int robotVelocity;
@@ -183,6 +183,9 @@ private:
     std::size_t scene_count;
     std::stack<cv::Point2d> robotScenePosition;
     double scene_between_dis;
+    QString imgfoldername;
+
+    cv::Point2d pre_turn_pos;
 };
 }
 #endif // MYEFKSLAM_H

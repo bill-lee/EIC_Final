@@ -1,6 +1,7 @@
 #include "myefkslam.h"
 
-double turn_dis[4] = {150, 150, 140, 230};
+// 150 150 140 230
+double turn_dis[4] = {155, 155, 140, 230};
 
 lab405::MyEFKSLAM::MyEFKSLAM(double w, int velocity, const cv::Point2d &point, int num, double gl, double gc, double t, double n, int weight, double _Kr, double _Kl, double _dis)
     : myrobot(new MyRobot()), EKFTimer(new QTimer),
@@ -155,7 +156,7 @@ void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _
 
     robotOutputFile.open("20150503_EKF_odoFile.txt");
     laserOutputFile.open("20150503_EKF_laserFile.txt");
-    robotSceneFile.open("20150503_EKF_sceneData.txt");
+//    robotSceneFile.open("20150503_EKF_sceneData.txt");
 
     vector<vector<Line>> lines;
     CornerExtraction cornerEx;
@@ -1006,7 +1007,8 @@ void lab405::MyEFKSLAM::PControlTest()
     else if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x < turn_dis[turn_count % 4])
     {
 
-        std::cout << "*** Rotate 90 degrees!!!" << std::endl;
+        std::cout << "*** Rotate 90 degrees!!! turn_count = " << turn_count << "turn_dis[] = " << turn_dis[turn_count % 4] << std::endl;
+        this->PcontrolTimer->stop();
         double angle = 90;
         this->myrobot->left_dcmotor->Stop();
 
@@ -1024,8 +1026,11 @@ void lab405::MyEFKSLAM::PControlTest()
             fir_pos = sec_pos;
             sec_pos = myrobot->right_dcmotor->GetPose();
         }
+
+
         turn_count++;
 
+        this->PcontrolTimer->start(1000);
     }
     else
     {
@@ -1042,7 +1047,8 @@ void lab405::MyEFKSLAM::PControlTest()
 
     //SLAM_Robot->gridMapper.InsertLocalGridMap();
 
-    this->DataAssociationAndUpdate(line, cor);
+    if (line.size() != 0 || cor.size() != 0)
+        this->DataAssociationAndUpdate(line, cor);
 
     // Get Robot State
     this->robotPosition = this->robotState;
@@ -1247,8 +1253,13 @@ void lab405::MyEFKSLAM::PControlTest()
 
 
         cv::circle(color_plannignGridMap, this->currentStart, 4, cv::Scalar(0,255,0), 2  );
-        cv::circle(color_plannignGridMap, this->GoalEnd, 4, cv::Scalar(0,255,0), 2  );
-        cv::circle(color_plannignGridMap, tempEnd, 4, cv::Scalar(0,255,0), 2  );
+        cv::line(color_plannignGridMap, this->currentStart,
+                 cv::Point(this->currentStart.x +
+                           10*cos(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0]),
+                 this->currentStart.y +
+                 10*sin(RobotStateAfterAdjust.robotPositionMean.ptr<double>(2)[0])), cv::Scalar(255, 0,0), 2,CV_AA);
+//        cv::circle(color_plannignGridMap, this->GoalEnd, 4, cv::Scalar(0,255,0), 2  );
+//        cv::circle(color_plannignGridMap, tempEnd, 4, cv::Scalar(0,255,0), 2  );
 
     //    clock_t endTime=clock();
     //    double total=(double)(endTime-startTime)/CLK_TCK;
@@ -1265,11 +1276,12 @@ void lab405::MyEFKSLAM::PControlTest()
         cv::imshow("color_plannignGridMap",color_plannignGridMap);
         cv::imshow("plannignGridMap",plannignGridMap);
         static int count=0;
-        QString name="Img/"+QString::number(count)+".jpg";
+        QString name= "./" + imgfoldername + "/"+QString::number(count)+".jpg";
+        std::cout << "save img = " << name.toStdString() << std::endl;
         cv::imwrite(name.toStdString(),color_plannignGridMap);
-        cv::imwrite("Img/plannignGridMap.jpg",plannignGridMap);
-        cv::imwrite("Img/gridImg.jpg",OccupancyGridMapImg);
-        cv::imwrite("Img/landMarkImg.jpg",landMarkImg);
+        cv::imwrite(imgfoldername.toStdString() + "/plannignGridMap.jpg",plannignGridMap);
+        cv::imwrite(imgfoldername.toStdString() + "/gridImg.jpg",OccupancyGridMapImg);
+        cv::imwrite(imgfoldername.toStdString() + "/landMarkImg.jpg",landMarkImg);
         count++;
 
         cv::waitKey(1);
@@ -1508,6 +1520,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
             GatingFeature = gatingCorner;
 
 
+        std::cout << "landmarkSets.size() = " << landmarkSets.size() << std::endl;
         // All Observed Features Match with Features of Map
         for(int j = 0; j != landmarkSets.size(); ++j)
         {
@@ -1556,10 +1569,10 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
             // line feature debug message
-//            if (obsFeature[i].GetFeatureType() == Line_Feature)
-//            {
-//                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
-//            }
+            if (obsFeature[i].GetFeatureType() == Line_Feature)
+            {
+                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
+            }
             if(gating <= GatingFeature)
             {
 
@@ -1615,7 +1628,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
     //feature selection
     vector<Feature> map;
     FeatureSelection(newFeature,map);
-     //cout<<"Number of landmark = "<<map.size()<<endl;
+    std::cout<<"After selection: Number of landmark = "<<map.size()<<std::endl;
     for(int i=0;i!=map.size();++i)
     {
         Feature localTemp;
@@ -1772,7 +1785,7 @@ void lab405::MyEFKSLAM::FeatureSelection(const std::vector<Feature> &obsFeatureS
     vector<bool> matchFlag;  //true: match  §PÂ_obs¯S¼x¬O§_³Qmatch¨ì ¦pªG¨S¦³³Qmatch¨ì«hµø¬°²Ä¤@¦¸µo²{
     matchFlag.reserve(obsFeatureSets.size());
 
-
+    // for all input current observed features
     for(int i=0;i!=obsFeatureSets.size();++i)
     {
         Feature obsglobalFeature;
@@ -1782,14 +1795,19 @@ void lab405::MyEFKSLAM::FeatureSelection(const std::vector<Feature> &obsFeatureS
         std::list<int>::iterator k=candidateWeighting.begin();
 
         bool match=false;
+        std::cout << "candidateFeatureSets.size() = " <<candidateFeatureSets.size() << std::endl;
         for(int count=0;count!=candidateFeatureSets.size();++count)
         {
+
             if(obsglobalFeature.GetFeatureType()!=j->GetFeatureType())
                 continue;
 
             double distance=_EuclideanDistance(obsglobalFeature,*j);
 
 
+            std::cout << i << ", count = " << count
+                      << " dis = " << distance
+                      << " newFR = " << newFeatureRadius << std::endl;
             if(distance<newFeatureRadius)
             {
                 //cout<<"²Ä"<<i<<"­Ó¯S¼x_»P²Ä"<<count<<"  "<<(*j).featureMean<<"­Ó­Ô¿ï¤H_¤À¼Æ"<<distance<<endl;
@@ -1808,6 +1826,7 @@ void lab405::MyEFKSLAM::FeatureSelection(const std::vector<Feature> &obsFeatureS
         //check landmark set ¬O§_¦³¤@¼Ëªº¯S¼x
         /////////////////////////////////
 
+        std::cout << "landmarkSets.size() = " << landmarkSets.size() << std::endl;
         for(int k=0;k!=landmarkSets.size();++k)
         {
             if(obsglobalFeature.GetFeatureType()!=landmarkSets[k].GetFeatureType())
@@ -2772,7 +2791,7 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
 
         robotOutputFile.open("20150525_EKF_odoFile.txt");
         laserOutputFile.open("20150525_EKF_laserFile.txt");
-        robotSceneFile.open("20150525_EKF_sceneData.txt");
+//        robotSceneFile.open("20150525_EKF_sceneData.txt");
         robotStateFile.open("20150525_EKF_robotState.txt");
 
         vector<vector<Line>> lines;
@@ -2874,11 +2893,13 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         cv::destroyAllWindows();
 }
 
-void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y, double threshold/*??*/, const string &filename_tPoints)
+void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, double _slam_x, double _slam_y,
+                                        double threshold/*??*/, const std::string& name)
 {
     //    odoValueCurrent = cv::Point2d(0.0, 0.0); // x:right odo y:left odo
         // shih's EKF slam
         // EKFtimer flag
+
         checkBit = true;
         motionMode = false;
         sceneCnt = 0;
@@ -2891,21 +2912,6 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
 
         while (!robotScenePosition.empty())
             robotScenePosition.pop();
-
-        tP_count = 0;
-        std::string filename = "./" + filename_tPoints + ".txt";
-        std::ifstream infile_tP (filename);
-        if (infile_tP.is_open())
-        {
-            infile_tP >> num_tP;
-            for (int i = 0; i < num_tP; i++)
-            {
-               int temp_x, temp_y;
-               infile_tP >> temp_x >> temp_y;
-               cv::Point temp (temp_x, temp_y);
-               tP_set.push_back(temp);
-            }
-        }
 
         slam_x = _slam_x;
         slam_x0 = _slam_x0;
@@ -2932,9 +2938,15 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
     //    }
     //    std::cout << std::endl;
 
-        robotOutputFile.open("20150526_EKF_odoFile.txt");
-        laserOutputFile.open("20150526_EKF_laserFile.txt");
-        robotSceneFile.open("20150526_EKF_sceneData.txt");
+        const std::string odo_filename = name + "_EKF_odoFile.txt";
+        const std::string laser_filename = name + "_EKF_laserFile.txt";
+
+        robotOutputFile.open(odo_filename);
+        laserOutputFile.open(laser_filename);
+
+        imgfoldername = QString::fromStdString(name) + "Img";
+        if(!QDir(imgfoldername).exists()) //check folder exist
+            QDir().mkdir(imgfoldername);
 
         vector<vector<Line>> lines;
         CornerExtraction cornerEx;

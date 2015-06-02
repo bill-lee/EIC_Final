@@ -16,13 +16,14 @@
 class LineExtraction
 {
 public:
-    LineExtraction(double d=100.0):distanceThreshold(d)
+    LineExtraction(double d=100.0, std::size_t _size = 50)
+        : distanceThreshold(d), sizethreshold(_size)
     {
         lineImg=cv::Mat::zeros(500,500,CV_8UC3);
     }
 
     cv::Mat lineImg;
-    void SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std::vector<Line>& lineFeature);
+    void SplitAndMerge(const std::vector<cv::Point2d> &PointSite, std::vector<Line>& lineFeature);
     void SetDistanceThreshold(double num){  distanceThreshold=num;  }
     // para.x: rho, para.y: theta
     static void LineRhoThetaExtraction(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, cv::Point2d& para);
@@ -38,6 +39,7 @@ private:
     void _PointsetsCalLinePolarParameter(const std::vector<cv::Point2d> &PointSite,Line &singleLineFeature);
     void _SeparatePoints(const Line& baseLine,const cv::Point2d& farthestPoint,const std::vector<cv::Point2d>& PointSite,std::vector<cv::Point2d>& LeltPointSite,std::vector<cv::Point2d>& RightPointSite);
 
+    std::size_t sizethreshold;
 
 };
 

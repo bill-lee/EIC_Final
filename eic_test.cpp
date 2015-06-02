@@ -2723,12 +2723,13 @@ void EIC_Test::on_pushButton_slam_navi_init_clicked()
 void EIC_Test::on_pushButton_slam_p_init_clicked()
 {
     connect(myekfslam->PcontrolTimer, SIGNAL(timeout()), myekfslam, SLOT(PControlTest()));
-    myekfslam->PControlInitial(ui->spinBox_slam_sceneNum->value(),
-                       ui->spinBox_slam_x0->value(),
-                       ui->spinBox_slam_x->value(),
-                       ui->spinBox_slam_y->value(),
-                       ui->doubleSpinBox->value(),
-                               ui->lineEdit_slam_tPoints->text().toStdString());
+    myekfslam->PControlInitial(
+                ui->spinBox_slam_sceneNum->value(),
+                ui->spinBox_slam_x0->value(),
+                ui->spinBox_slam_x->value(),
+                ui->spinBox_slam_y->value(),
+                ui->doubleSpinBox->value(),
+                ui->lineEdit_slam_savename->text().toStdString());
 }
 
 void EIC_Test::SceneScan(int scene_count)
@@ -2736,7 +2737,7 @@ void EIC_Test::SceneScan(int scene_count)
     if (!ui->pushButton_robot_connect->isVisible())
     {
 
-        QString filename = ui->lineEdit_slam_scene_filename->text() + QString("_%1").arg(scene_count);
+        QString filename = ui->lineEdit_slam_savename->text() + QString("_%1").arg(scene_count);
         ui->progressBar_robot->setMaximum(ui->doubleSpinBox_robot_laser_count->value() - 1);
         myekfslam->myrobot->DataAcquisitionConti(ui->doubleSpinBox_robot_startangle->value(),
                                       int(ui->doubleSpinBox_robot_laser_count->value()),

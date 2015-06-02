@@ -7,7 +7,7 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
     cv::Point2d side1(0,0),side2(0,0);
     double maxDistance=0;
 
-    if(PointSite.size() < 10)  // ending condition, with condition of small than 10
+    if(PointSite.size() < sizethreshold)  // ending condition, with condition of small than 10
         return ;
 
     for (int i=0 ; i<PointSite.size() ; i++) //finding the furthest points
@@ -36,6 +36,8 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
         Line temp;
         _PointsetsCalLinePolarParameter(PointSite,temp);
         lineFeature.push_back(temp);
+
+        std::cout << "PointSite.size() = " << PointSite.size() << std::endl;
 
         return;
     }
