@@ -197,6 +197,8 @@ private slots:
 
     void on_pushButton_26_clicked();
 
+    void on_pushButton_slam_offline_clicked();
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;

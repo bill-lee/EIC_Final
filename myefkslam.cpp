@@ -1034,6 +1034,7 @@ void lab405::MyEFKSLAM::PControlTest()
                      (this->currentStart.x - pre_turn_pos.x) +
                      (this->currentStart.y - pre_turn_pos.y)*
                      (this->currentStart.y - pre_turn_pos.y));
+        std::cout << "dis_temp = " << dis_temp << std::endl;
         if (dis_temp > 20.0)
         {
             turn_count++;

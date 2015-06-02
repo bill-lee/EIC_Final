@@ -24,7 +24,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>3</number>
+          <number>7</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -1852,37 +1852,6 @@
             <string>Test Size</string>
            </property>
           </widget>
-          <zorder>pushButton_robot_data_acquisition</zorder>
-          <zorder>label_robot_laser_count</zorder>
-          <zorder>label_robot_startangle</zorder>
-          <zorder>label_robot_startangle_2</zorder>
-          <zorder>lineEdit_robot_filename</zorder>
-          <zorder>label_robot_filename</zorder>
-          <zorder>doubleSpinBox_robot_laser_count</zorder>
-          <zorder>doubleSpinBox_robot_startangle</zorder>
-          <zorder>doubleSpinBox_robot_endangle</zorder>
-          <zorder>pushButton</zorder>
-          <zorder>pushButton_2</zorder>
-          <zorder>pushButton_robot_stop</zorder>
-          <zorder>checkBox_robot_withcolor</zorder>
-          <zorder>pushButton_3</zorder>
-          <zorder>pushButton_4</zorder>
-          <zorder>pushButton_5</zorder>
-          <zorder>pushButton_6</zorder>
-          <zorder>pushButton_7</zorder>
-          <zorder>pushButton_8</zorder>
-          <zorder>pushButton_9</zorder>
-          <zorder>pushButton_robot_connect</zorder>
-          <zorder>pushButton_robot_disconnect</zorder>
-          <zorder>pushButton_robot_closeall</zorder>
-          <zorder>progressBar_robot</zorder>
-          <zorder>lineEdit_robot_camera_num</zorder>
-          <zorder>label_robot_camera_num</zorder>
-          <zorder>pushButton_robot_trigger</zorder>
-          <zorder>pushButton_robot_stoptrigger</zorder>
-          <zorder>pushButton_10</zorder>
-          <zorder>pushButton_robot_test</zorder>
-          <zorder>textBrowser</zorder>
          </widget>
          <widget class="QWidget" name="tab_6">
           <attribute name="title">
@@ -2598,6 +2567,19 @@
             <string>SaveName</string>
            </property>
           </widget>
+          <widget class="QPushButton" name="pushButton_slam_offline">
+           <property name="geometry">
+            <rect>
+             <x>400</x>
+             <y>380</y>
+             <width>101</width>
+             <height>61</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Offline SLAM</string>
+           </property>
+          </widget>
          </widget>
         </widget>
        </item>
@@ -2615,7 +2597,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
