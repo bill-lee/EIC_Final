@@ -2713,11 +2713,12 @@ void EIC_Test::on_pushButton_dcmotor_oneright_clicked()
 void EIC_Test::on_pushButton_slam_navi_init_clicked()
 {
     myekfslam->NavigationInitial(ui->spinBox_slam_sceneNum->value(),
-                       ui->spinBox_slam_x0->value(),
-                       ui->spinBox_slam_x->value(),
-                       ui->spinBox_slam_y->value(),
-                       ui->doubleSpinBox->value(),
-                       ui->lineEdit_slam_tPoints->text().toStdString());
+                                 ui->spinBox_slam_x0->value(),
+                                 ui->spinBox_slam_x->value(),
+                                 ui->spinBox_slam_y->value(),
+                                 ui->doubleSpinBox->value(),
+                                 ui->lineEdit_slam_tPoints->text().toStdString(),
+                                 ui->lineEdit_slam_savename->text().toStdString());
 }
 
 void EIC_Test::on_pushButton_slam_p_init_clicked()
