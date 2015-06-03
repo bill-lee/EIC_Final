@@ -52,7 +52,7 @@ public:
 
     bool ReadData(QString& data, int num);
 public slots:
-    int GetPose();
+    long GetPose();
 
     void Response();
 

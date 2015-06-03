@@ -147,7 +147,7 @@ void DCMotor_Controller::Disconnect()
     disconnect(this, SIGNAL(readyRead()), this, SLOT(Response()));
 }
 
-int DCMotor_Controller::GetPose()
+long int DCMotor_Controller::GetPose()
 {
 //    std::cout << "GetPose()" << std::endl;
     std::stringstream  cmd;
@@ -176,7 +176,7 @@ int DCMotor_Controller::GetPose()
         temp = this->peek(this->bytesAvailable());
     }
     QString str(test);
-    return str.toInt();
+    return str.toLong();
 
 
 //    std::cout << "command_queue size = " << command_queue.size() << std::endl;

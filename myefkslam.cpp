@@ -240,7 +240,7 @@ void lab405::MyEFKSLAM::Initial(std::size_t _sceneNum, double _slam_x0, double _
     this->GoalEnd.y = _slam_y;
 
     // initial
-    this->odoValuePrevious = cv::Point2d(0.0, 0.0);
+    this->odoValuePrevious = RobotPOS(0, 0);
 
     this->EKFTimer->start(1000);
 
@@ -275,19 +275,19 @@ void lab405::MyEFKSLAM::Prediction()
 
 //    saveFileIndex++;
 //    readFlag=true;
-//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.x)*32.5*CV_PI)/(4096*14.0*3.33333));
-//    double DeltaLeft=((double)((odoValueCurrent.y-odoValuePrevious.y)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.first)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaLeft=((double)((odoValueCurrent.second-odoValuePrevious.second)*32.5*CV_PI)/(4096*14.0*3.33333));
 
 
 
 //    ui->textBrowser->setFontWeight( QFont::Normal );
 //    ui->textBrowser->setTextColor( QColor( "blue" ) );
 //    ui->textBrowser->append("[encoder]:("+QString::number(DeltaRight)+","+QString::number(DeltaLeft)+")");
-//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<odoValuePrevious.x<<" , "<<odoValuePrevious.y<<endl;
+//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.second<<" time:"<<odoValuePrevious.first<<" , "<<odoValuePrevious.second<<endl;
 //    cout<<"3:"<<DeltaRight<<" "<<DeltaLeft<<" time:"<<endl;
 
-//    odoValuePrevious.x=odoValueCurrent.x;
-//    odoValuePrevious.y=odoValueCurrent.y;
+//    odoValuePrevious.first=odoValueCurrent.x;
+//    odoValuePrevious.second=odoValueCurrent.second;
 
 //    std::vector<cv::Point2d> points;
 //    std::vector<Line> line;
@@ -300,7 +300,7 @@ void lab405::MyEFKSLAM::Prediction()
 
 //    ////////////////////////////////////////////////////////////////////////
 //    //motion estimation
-//    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
+//    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.first<<endl;DeltaLeft
 //    myekfslam->myrobot->EKFRuner.MotionPrediction(cv::Point2d(DeltaLeft,DeltaRight));
 
 //    //SLAM_Robot->gridMapper.InsertLocalGridMap();
@@ -584,8 +584,8 @@ void lab405::MyEFKSLAM::EKFStepExamine()
         sec_pos = myrobot->right_dcmotor->GetPose();
     }
 //    double ReadingR = sec_pos;
-    odoValueCurrent.x = sec_pos;
-//    std::cout << "odoValueCurrent.x = " << odoValueCurrent.x << std::endl;
+    odoValueCurrent.first = sec_pos;
+//    std::cout << "odoValueCurrent.first= " << odoValueCurrent.first<< std::endl;
 
     fir_pos = myrobot->left_dcmotor->GetPose();
     sec_pos = myrobot->left_dcmotor->GetPose();
@@ -596,34 +596,34 @@ void lab405::MyEFKSLAM::EKFStepExamine()
         sec_pos = myrobot->left_dcmotor->GetPose();
     }
 //    double ReadingL = sec_pos;
-    odoValueCurrent.y = sec_pos;
-//    std::cout << "odoValueCurrent.y = " << odoValueCurrent.y << std::endl;
+    odoValueCurrent.second = sec_pos;
+//    std::cout << "odoValueCurrent.second = " << odoValueCurrent.second << std::endl;
 
 
     // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
     // reverse of static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi));
-    double DeltaR = abs(odoValueCurrent.x - odoValuePrevious.x)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
-    double DeltaL = abs(odoValueCurrent.y - odoValuePrevious.y)*CV_PI*32.5*0.9487/(4096*3.333*14);
+    double DeltaR = abs(odoValueCurrent.first- odoValuePrevious.first)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
+    double DeltaL = abs(odoValueCurrent.second - odoValuePrevious.second)*CV_PI*32.5*0.9487/(4096*3.333*14);
     std::cout << "DeltaR = " << DeltaR << ", DeltaL = " << DeltaL << std::endl;
 
-    odoValuePrevious.x = odoValueCurrent.x;
-    odoValuePrevious.y = odoValueCurrent.y;
+    odoValuePrevious.first = odoValueCurrent.first;
+    odoValuePrevious.second = odoValueCurrent.second;
 
 //    saveFileIndex++;
 //    readFlag=true;
-//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.x)*32.5*CV_PI)/(4096*14.0*3.33333));
-//    double DeltaLeft=((double)((odoValueCurrent.y-odoValuePrevious.y)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.first)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaLeft=((double)((odoValueCurrent.second-odoValuePrevious.second)*32.5*CV_PI)/(4096*14.0*3.33333));
 
 
 
 //    ui->textBrowser->setFontWeight( QFont::Normal );
 //    ui->textBrowser->setTextColor( QColor( "blue" ) );
 //    ui->textBrowser->append("[encoder]:("+QString::number(DeltaRight)+","+QString::number(DeltaLeft)+")");
-//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<odoValuePrevious.x<<" , "<<odoValuePrevious.y<<endl;
+//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.second<<" time:"<<odoValuePrevious.first<<" , "<<odoValuePrevious.second<<endl;
 //    cout<<"3:"<<DeltaRight<<" "<<DeltaLeft<<" time:"<<endl;
 
-//    odoValuePrevious.x=odoValueCurrent.x;
-//    odoValuePrevious.y=odoValueCurrent.y;
+//    odoValuePrevious.first=odoValueCurrent.x;
+//    odoValuePrevious.second=odoValueCurrent.second;
 
 
 
@@ -644,7 +644,7 @@ void lab405::MyEFKSLAM::EKFStepExamine()
 
     ////////////////////////////////////////////////////////////////////////
     //motion estimation
-    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
+    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.first<<endl;DeltaLeft
     // Prediction
     this->MotionPrediction(DeltaR, DeltaL);
 
@@ -944,14 +944,14 @@ void lab405::MyEFKSLAM::PControlTest()
     myrobot->left_dcmotor->Stop();
 
     int Pos_Stop_error = 1;
-    int fir_pos = myrobot->right_dcmotor->GetPose();
-    int sec_pos = myrobot->right_dcmotor->GetPose();
+    long int fir_pos = myrobot->right_dcmotor->GetPose();
+    long int sec_pos = myrobot->right_dcmotor->GetPose();
     while (abs(sec_pos - fir_pos) > Pos_Stop_error)
     {
         fir_pos = sec_pos;
         sec_pos = myrobot->right_dcmotor->GetPose();
     }
-    odoValueCurrent.x = sec_pos;
+    odoValueCurrent.first= sec_pos;
 
     fir_pos = myrobot->left_dcmotor->GetPose();
     sec_pos = myrobot->left_dcmotor->GetPose();
@@ -960,17 +960,17 @@ void lab405::MyEFKSLAM::PControlTest()
         fir_pos = sec_pos;
         sec_pos = myrobot->left_dcmotor->GetPose();
     }
-    odoValueCurrent.y = sec_pos;
+    odoValueCurrent.second = sec_pos;
 
 
     // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
     // reverse of static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi));
-    double DeltaR = abs(odoValueCurrent.x - odoValuePrevious.x)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
-    double DeltaL = abs(odoValueCurrent.y - odoValuePrevious.y)*CV_PI*32.5*0.9487/(4096*3.333*14);
+    double DeltaR = abs(odoValueCurrent.first- odoValuePrevious.first)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
+    double DeltaL = abs(odoValueCurrent.second - odoValuePrevious.second)*CV_PI*32.5*0.9487/(4096*3.333*14);
     std::cout << "DeltaR = " << DeltaR << ", DeltaL = " << DeltaL << std::endl;
 
-    odoValuePrevious.x = odoValueCurrent.x;
-    odoValuePrevious.y = odoValueCurrent.y;
+    odoValuePrevious.first = odoValueCurrent.first;
+    odoValuePrevious.second = odoValueCurrent.second;
 
     ////////////////////////////////////////////////////////////////////////
     //feature extraction
@@ -998,16 +998,39 @@ void lab405::MyEFKSLAM::PControlTest()
     // 230
 
 
+    // prevent the same place rotate twice
+    double dis_temp =
+            sqrt((this->currentStart.x - pre_turn_pos.x)*
+                 (this->currentStart.x - pre_turn_pos.x) +
+                 (this->currentStart.y - pre_turn_pos.y)*
+                 (this->currentStart.y - pre_turn_pos.y));
+    std::cout << "dis_temp = " << dis_temp << std::endl;
+
+    std::size_t count_temp;
+    if (dis_temp > 20.0)
+    {
+        count_temp = turn_count;
+//        turn_count++;
+//        pre_turn_pos = this->currentStart;
+    }
+    else
+    {
+        count_temp = turn_count - 1;
+    }
+
     // Control for wall following
-    if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x > turn_dis[turn_count % 4])
+    if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x > turn_dis[count_temp % 4])
     {
         std::cout << "Face Wall!" << std::endl;
         MotionControl(1.0, para, 90, 5.0, 1.6);
     }
-    else if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x < turn_dis[turn_count % 4])
+    else if (para.y < CV_PI/2 + 0.3 && para.y > CV_PI/2 - 0.3 && para.x < turn_dis[count_temp % 4])
     {
 
-        std::cout << "*** Rotate 90 degrees!!! turn_count = " << turn_count << "turn_dis[] = " << turn_dis[turn_count % 4] << std::endl;
+        std::cout << "*** Rotate 90 degrees!!! turn_count = " << turn_count << "turn_dis[] = "
+                  << turn_dis[count_temp % 4]
+                  << " count_temp = "
+                  << count_temp << std::endl;
 //        this->PcontrolTimer->stop();
         double angle = 90;
         this->myrobot->left_dcmotor->Stop();
@@ -1018,7 +1041,7 @@ void lab405::MyEFKSLAM::PControlTest()
         int value = static_cast<int>((4096*3.333*14)*(0.57/0.325)*angle/360/0.9487*2);
         this->myrobot->right_dcmotor->RotateRelativeDistancce(value);
 
-        int Pos_Stop_error = 10;
+        int Pos_Stop_error = 1;
         int fir_pos = myrobot->right_dcmotor->GetPose();
         int sec_pos = myrobot->right_dcmotor->GetPose();
         while (abs(sec_pos - fir_pos) > Pos_Stop_error)
@@ -1028,18 +1051,12 @@ void lab405::MyEFKSLAM::PControlTest()
         }
 
 
-        // prevent the same place rotate twice
-        double dis_temp =
-                sqrt((this->currentStart.x - pre_turn_pos.x)*
-                     (this->currentStart.x - pre_turn_pos.x) +
-                     (this->currentStart.y - pre_turn_pos.y)*
-                     (this->currentStart.y - pre_turn_pos.y));
-        std::cout << "dis_temp = " << dis_temp << std::endl;
         if (dis_temp > 20.0)
         {
             turn_count++;
             pre_turn_pos = this->currentStart;
         }
+
 //        this->PcontrolTimer->start(1000);
     }
     else
@@ -1300,7 +1317,11 @@ void lab405::MyEFKSLAM::PControlTest()
         // saving
         saveFileIndex++;
         std::cout << "Saving! " << saveFileIndex << std::endl;
-        robotOutputFile << saveFileIndex << " " << odoValueCurrent.x << " " << odoValueCurrent.y;  //encoder
+        robotOutputFile << saveFileIndex << " "
+                        << std::fixed << std::setprecision(std::numeric_limits<long int>::digits10)
+                        << odoValueCurrent.first<< " "
+                        << odoValueCurrent.second;
+//        robotOutputFile << saveFileIndex << " " << odoValueCurrent.first<< " " << odoValueCurrent.second;  //encoder
         laserOutputFile << saveFileIndex << " ";
         for(int i = 0; i != LaserRawData.size(); ++i)
             laserOutputFile << LaserRawData[i] << " ";
@@ -1530,7 +1551,7 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
             GatingFeature = gatingCorner;
 
 
-        std::cout << "landmarkSets.size() = " << landmarkSets.size() << std::endl;
+//        std::cout << "landmarkSets.size() = " << landmarkSets.size() << std::endl;
         // All Observed Features Match with Features of Map
         for(int j = 0; j != landmarkSets.size(); ++j)
         {
@@ -1579,10 +1600,10 @@ void lab405::MyEFKSLAM::DataAssociationAndUpdate(const std::vector<Line> &obsLin
 
 
             // line feature debug message
-            if (obsFeature[i].GetFeatureType() == Line_Feature)
-            {
-                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
-            }
+//            if (obsFeature[i].GetFeatureType() == Line_Feature)
+//            {
+//                std::cout << i << " Line Gating = " << gating << ", threshold = " << GatingFeature << std::endl;
+//            }
             if(gating <= GatingFeature)
             {
 
@@ -2349,8 +2370,8 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
         sec_pos = myrobot->right_dcmotor->GetPose();
     }
 //    double ReadingR = sec_pos;
-    odoValueCurrent.x = sec_pos;
-//    std::cout << "odoValueCurrent.x = " << odoValueCurrent.x << std::endl;
+    odoValueCurrent.first= sec_pos;
+//    std::cout << "odoValueCurrent.first= " << odoValueCurrent.first<< std::endl;
 
     fir_pos = myrobot->left_dcmotor->GetPose();
     sec_pos = myrobot->left_dcmotor->GetPose();
@@ -2361,33 +2382,33 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
         sec_pos = myrobot->left_dcmotor->GetPose();
     }
 //    double ReadingL = sec_pos;
-    odoValueCurrent.y = sec_pos;
-//    std::cout << "odoValueCurrent.y = " << odoValueCurrent.y << std::endl;
+    odoValueCurrent.second = sec_pos;
+//    std::cout << "odoValueCurrent.second = " << odoValueCurrent.second << std::endl;
 
 
     // [encoder:4096]  [motor Gearhead:14]  [wheel gear:3.333] [wheel diameter:0.325m]
     // reverse of static_cast<int>((4096*3.333*14)*(distance_m/0.325)/(pi));
-    double DeltaR = abs(odoValueCurrent.x - odoValuePrevious.x)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
-    double DeltaL = abs(odoValueCurrent.y - odoValuePrevious.y)*CV_PI*32.5*0.9487/(4096*3.333*14);
+    double DeltaR = abs(odoValueCurrent.first- odoValuePrevious.first)*CV_PI*32.5*0.9487/(4096*3.333*14);  // unit cm
+    double DeltaL = abs(odoValueCurrent.second - odoValuePrevious.second)*CV_PI*32.5*0.9487/(4096*3.333*14);
     std::cout << "DeltaR = " << DeltaR << ", DeltaL = " << DeltaL << std::endl;
 
-    odoValuePrevious.x = odoValueCurrent.x;
-    odoValuePrevious.y = odoValueCurrent.y;
+    odoValuePrevious.first = odoValueCurrent.first;
+    odoValuePrevious.second = odoValueCurrent.second;
 
 //    readFlag=true;
-//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.x)*32.5*CV_PI)/(4096*14.0*3.33333));
-//    double DeltaLeft=((double)((odoValueCurrent.y-odoValuePrevious.y)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaRight=((double)((odoValueCurrent.x-odoValuePrevious.first)*32.5*CV_PI)/(4096*14.0*3.33333));
+//    double DeltaLeft=((double)((odoValueCurrent.second-odoValuePrevious.second)*32.5*CV_PI)/(4096*14.0*3.33333));
 
 
 
 //    ui->textBrowser->setFontWeight( QFont::Normal );
 //    ui->textBrowser->setTextColor( QColor( "blue" ) );
 //    ui->textBrowser->append("[encoder]:("+QString::number(DeltaRight)+","+QString::number(DeltaLeft)+")");
-//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.y<<" time:"<<odoValuePrevious.x<<" , "<<odoValuePrevious.y<<endl;
+//    cout<<"3:"<<odoValueCurrent.x<<" "<<odoValueCurrent.second<<" time:"<<odoValuePrevious.first<<" , "<<odoValuePrevious.second<<endl;
 //    cout<<"3:"<<DeltaRight<<" "<<DeltaLeft<<" time:"<<endl;
 
-//    odoValuePrevious.x=odoValueCurrent.x;
-//    odoValuePrevious.y=odoValueCurrent.y;
+//    odoValuePrevious.first=odoValueCurrent.x;
+//    odoValuePrevious.second=odoValueCurrent.second;
 
 
 
@@ -2406,7 +2427,7 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
     ////////////////////////////////////////////////////////////////////
     // saving
     saveFileIndex++;
-    robotOutputFile << saveFileIndex << " " << odoValueCurrent.x << " " << odoValueCurrent.y << endl;  //encoder
+    robotOutputFile << saveFileIndex << " " << odoValueCurrent.first<< " " << odoValueCurrent.second << endl;  //encoder
     laserOutputFile << saveFileIndex << " ";
     for(int i = 0; i != LaserRawData.size(); ++i)
         laserOutputFile << LaserRawData[i] << " ";
@@ -2419,7 +2440,7 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
 
     ////////////////////////////////////////////////////////////////////////
     //motion estimation
-    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.x<<endl;DeltaLeft
+    //cout<<DeltaRight<<" "<<odoValueCurrent.x<<" "<<odoValuePrevious.first<<endl;DeltaLeft
     // Prediction
     this->MotionPrediction(DeltaR, DeltaL);
 
@@ -2896,7 +2917,7 @@ void lab405::MyEFKSLAM::NavigationInitial(std::size_t _sceneNum, double _slam_x0
         this->GoalEnd.y = _slam_y;
 
         // initial
-        this->odoValuePrevious = cv::Point2d(0.0, 0.0);
+        this->odoValuePrevious = RobotPOS(0, 0);
 
 //        this->EKFTimer->start(1000);
 
@@ -3042,11 +3063,12 @@ void lab405::MyEFKSLAM::PControlInitial(std::size_t _sceneNum, double _slam_x0, 
     this->GoalEnd.y = _slam_y;
 
     // initial
-    this->odoValuePrevious = cv::Point2d(0.0, 0.0);
+    this->odoValuePrevious = RobotPOS(0, 0);
 
     scene_count = 1;
     robotScenePosition.push(cv::Point2d(0.0, 0.0));
     emit StartSceneScan(scene_count);
+
     //        this->PcontrolTimer->start(1000);
     //        this->PcontrolTimer->stop();
 

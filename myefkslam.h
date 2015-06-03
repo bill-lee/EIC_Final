@@ -17,6 +17,8 @@
 #include <QObject>
 #include <stack>
 namespace lab405 {
+typedef std::pair<long int, long int> RobotPOS;
+
 class MyEFKSLAM : public QObject
 {
     Q_OBJECT
@@ -112,8 +114,11 @@ private:
     std::size_t saveFileIndex;
     std::size_t sceneNum;
     bool motionMode;
-    cv::Point2d odoValuePrevious; // x:right odo y:left odo
-    cv::Point2d odoValueCurrent; // x:right odo y:left odo
+//    cv::Point2d odoValuePrevious; // x:right odo y:left odo
+//    cv::Point2d odoValueCurrent; // x:right odo y:left odo
+    RobotPOS odoValuePrevious; // x:right odo y:left odo
+    RobotPOS odoValueCurrent; // x:right odo y:left odo
+
     std::ofstream robotOutputFile;
     std::ofstream laserOutputFile;
 //    std::ofstream robotSceneFile;
