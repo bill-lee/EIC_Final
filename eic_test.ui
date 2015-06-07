@@ -24,7 +24,11 @@
        <item row="0" column="0">
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
+<<<<<<< HEAD
           <number>3</number>
+=======
+          <number>6</number>
+>>>>>>> 3b137b7437a93c3c7cb653f9284f4463013c253b
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -2289,7 +2293,7 @@
            <item row="0" column="0">
             <widget class="QTabWidget" name="tabWidget_2">
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="tab_7">
               <attribute name="title">
@@ -2940,7 +2944,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
