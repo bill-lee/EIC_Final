@@ -5,6 +5,7 @@
 #include "shih_slam/occupancygridmapping.h"
 #include "shih_slam/landmarkmapping.h"
 #include "shih_slam/lineextraction.h"
+#include "mycornerextractor.h"
 //#include "shih_slam/ekf_slam.h"
 //#include "shih_slam/pathplanning.h"
 #include "astarpathplanning.h"  // Lab405, A Star Path Planning
@@ -41,6 +42,7 @@ public:
     LandmarkMapping mapper;
     LineExtraction lineExtracter;
     CornerExtraction cornerExtractor;
+    MyCornerExtractor mycornerextractor;
 
     // mytoolkit
     RobotState robotPosition;

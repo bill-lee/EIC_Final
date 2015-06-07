@@ -3494,7 +3494,7 @@ void lab405::MyEFKSLAM::OfflineSLAM()
 //        std::cout << std::endl;
         std::cout << "LaserRawData.size() = " << LaserRawData.size() << std::endl;
 
-
+        this->mycornerextractor.GetCornerFeature(LaserRawData);
 
 
         this->mapper.RangesDataToPointsData(LaserRawData,LaserCatesianPoints);
