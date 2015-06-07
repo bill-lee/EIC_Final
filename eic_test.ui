@@ -24,7 +24,7 @@
        <item row="0" column="0">
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>7</number>
+          <number>3</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -1485,7 +1485,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>valid_test</string>
+            <string>valid_OK</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_robot_filename">
