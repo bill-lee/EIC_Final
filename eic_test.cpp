@@ -2882,7 +2882,8 @@ void EIC_Test::on_pushButton_valid_disconnect_clicked()
 void EIC_Test::RepeatSceneRetrieve(int)
 {
 //    int laser_nums[4] = {360, 720, 1080, 1440};
-    int laser_nums[4] = {360, 720, 1080, 1440};
+//    int laser_nums[4] = {360, 720, 1080, 1440};
+    int laser_nums[4] = {180, 360, 540, 720};
     if (valid_count == 4)
     {
         valid_count = 0;
@@ -2917,7 +2918,7 @@ void EIC_Test::RepeatSceneRetrieve(int)
 
 void EIC_Test::on_pushButton_valid_run_clicked()
 {
-    int laser_nums[4] = {360, 720, 1080, 1440};
+    int laser_nums[4] = {180, 360, 540, 720};
     if (valid_count == 4)
     {
         valid_count = 0;
@@ -2954,7 +2955,7 @@ void EIC_Test::on_pushButton_valid_re_clicked()
 {
     valid_count = ui->lineEdit_valid_valid_count->text().toInt();
     walk_count = ui->lineEdit_valid_walk_count->text().toInt();
-    int laser_nums[4] = {360, 720, 1080, 1440};
+    int laser_nums[4] = {180, 360, 540, 720};
     if (valid_count == 4)
     {
         valid_count = 0;
