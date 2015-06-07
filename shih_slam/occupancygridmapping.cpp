@@ -81,15 +81,15 @@ void OccupancyGridMapping::InvLaserModel(const double laserBeamRange, const doub
 
 void OccupancyGridMapping::_LogToBel(const cv::Mat &localMap,cv::Mat& gridMap8U)
 {
-     gridMap8U=cv::Mat::zeros(localMap.size(),CV_8U);
+    gridMap8U = cv::Mat::zeros(localMap.size(), CV_8U);
 
     for(int i = 0; i < localMap.rows; ++i)
-       for(int j = 0; j < localMap.cols; ++j)
-       {
-          double temp= 1 - (1/(1+exp(localMap.ptr<double>(i)[j])));
-          gridMap8U.ptr<uchar>(i)[j]=255-255*temp;  //255-255*temp;
+        for(int j = 0; j < localMap.cols; ++j)
+        {
+            double temp= 1 - (1/(1+exp(localMap.ptr<double>(i)[j])));
+            gridMap8U.ptr<uchar>(i)[j]=255-255*temp;  //255-255*temp;
 
-       }
+        }
 }
 
 void OccupancyGridMapping::InsertLocalGridMap(const std::vector<double> &laserRangeData, const cv::Point3d &robotPose2D)
@@ -174,6 +174,13 @@ cv::Point2d OccupancyGridMapping::GetRobotCenter(const RobotState& pose)
 
 
     return cv::Point2d(mx,my);
+}
+
+void OccupancyGridMapping::Reset()
+{
+    gridMap_originalPoint =cv::Point2d(150,500);  //unit:m
+
+    girdMap=cv::Mat(girdMap_rows,girdMap_cols,CV_64F); // initialize size of gridmap, and set to CV_64F
 }
 
 void OccupancyGridMapping::InvLaserAvoidMaxDistModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D, cv::Mat &gridMap, bool isGlobal)

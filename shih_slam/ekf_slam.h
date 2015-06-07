@@ -74,7 +74,6 @@ public:   //0.5  8     //測試0.25   10
        // std::cout<<"機器人共變異數矩陣"<<robotCombinedCovariance<<std::endl;
         //std::cout<<"============================="<<std::endl;
     }
-
     int count;
 private:
     //system parameter

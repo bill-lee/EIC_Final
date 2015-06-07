@@ -23,6 +23,9 @@ public:
     }
 
     cv::Mat lineImg;
+
+    void SetSizeThreshold(const std::size_t _size){sizethreshold = _size;}
+
     void SplitAndMerge(const std::vector<cv::Point2d> &PointSite, std::vector<Line>& lineFeature);
     void SetDistanceThreshold(double num){  distanceThreshold=num;  }
     // para.x: rho, para.y: theta

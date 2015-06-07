@@ -6,7 +6,9 @@ EIC_Test::EIC_Test(QWidget *parent) :
     ui(new Ui::EIC_Test),
     myekfslam(new lab405::MyEFKSLAM()),
 //    myrobot(new lab405::MyRobot()),
-    sensorsetup(new SensorSetup())
+    sensorsetup(new SensorSetup()),
+    Offline_SLAM(new lab405::MyEFKSLAM()),
+    valid_count(0), walk_count(0)
 {
     Robot_Thread = new QThread(this);
     myekfslam->myrobot->moveToThread(Robot_Thread);
@@ -116,9 +118,7 @@ EIC_Test::EIC_Test(QWidget *parent) :
 
     scenesTimer=new QTimer;
     connect(scenesTimer,SIGNAL(timeout()),this,SLOT(singleSceneAcquisition()));
-    // move to botton
-    connect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), myekfslam, SLOT(FinishSceneAndStartTimer(int)));
-    connect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+
 }
 
 EIC_Test::~EIC_Test()
@@ -2577,9 +2577,9 @@ void EIC_Test::on_pushButton_23_clicked()
 //    myekfslam->EKFTimer->start(1000);
 
     myekfslam->Initial(ui->spinBox_slam_sceneNum->value(),
-                       ui->spinBox_slam_x0->value(),
-                       ui->spinBox_slam_x->value(),
-                       ui->spinBox_slam_y->value(),
+                       ui->spinBox_slam_x0_2->value(),
+                       ui->spinBox_slam_x_2->value(),
+                       ui->spinBox_slam_y_2->value(),
                        ui->doubleSpinBox->value(),
                        ui->lineEdit_slam_tPoints->text().toStdString());
 }
@@ -2713,9 +2713,9 @@ void EIC_Test::on_pushButton_dcmotor_oneright_clicked()
 void EIC_Test::on_pushButton_slam_navi_init_clicked()
 {
     myekfslam->NavigationInitial(ui->spinBox_slam_sceneNum->value(),
-                                 ui->spinBox_slam_x0->value(),
-                                 ui->spinBox_slam_x->value(),
-                                 ui->spinBox_slam_y->value(),
+                                 ui->spinBox_slam_x0_2->value(),
+                                 ui->spinBox_slam_x_2->value(),
+                                 ui->spinBox_slam_y_2->value(),
                                  ui->doubleSpinBox->value(),
                                  ui->lineEdit_slam_tPoints->text().toStdString(),
                                  ui->lineEdit_slam_savename->text().toStdString());
@@ -2726,9 +2726,9 @@ void EIC_Test::on_pushButton_slam_p_init_clicked()
     connect(myekfslam->PcontrolTimer, SIGNAL(timeout()), myekfslam, SLOT(PControlTest()));
     myekfslam->PControlInitial(
                 ui->spinBox_slam_sceneNum->value(),
-                ui->spinBox_slam_x0->value(),
-                ui->spinBox_slam_x->value(),
-                ui->spinBox_slam_y->value(),
+                ui->spinBox_slam_x0_2->value(),
+                ui->spinBox_slam_x_2->value(),
+                ui->spinBox_slam_y_2->value(),
                 ui->doubleSpinBox->value(),
                 ui->lineEdit_slam_savename->text().toStdString());
 }
@@ -2823,5 +2823,202 @@ void EIC_Test::on_pushButton_26_clicked()
 
 void EIC_Test::on_pushButton_slam_offline_clicked()
 {
+    Offline_SLAM->OfflineSLAM();
 
 }
+
+void EIC_Test::on_pushButton_slam_offline_initial_clicked()
+{
+//    Offline_SLAM = new lab405::MyEFKSLAM();
+    Offline_SLAM->SetWeight(ui->lineEdit_slam_weight->text().toInt());
+    Offline_SLAM->SetLineSize(ui->lineEdit_slam_linesize->text().toInt());
+    Offline_SLAM->SetGatingLine(ui->lineEdit_slam_linegating->text().toDouble());
+    Offline_SLAM->SetGatingCorner(ui->lineEdit_slam_cornergating->text().toDouble());
+    Offline_SLAM->OfflineSLAMInitial(ui->lineEdit_slam_offline_filename->text().toStdString(),
+                                     ui->lineEdit_slam_offline_numlaser->text().toInt(),
+                                     ui->checkBox_slam_offline_is_scene->isChecked());
+}
+
+void EIC_Test::on_pushButton_slam_connect_clicked()
+{
+    // move to botton
+    connect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), myekfslam, SLOT(FinishSceneAndStartTimer(int)));
+    connect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+    ui->pushButton_slam_connect->setVisible(false);
+    ui->pushButton_slam_disconnect->setVisible(true);
+    ui->textBrowser->append("Online SLAM connect!");
+}
+
+void EIC_Test::on_pushButton_slam_disconnect_clicked()
+{
+    disconnect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), myekfslam, SLOT(FinishSceneAndStartTimer(int)));
+    disconnect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+    ui->pushButton_slam_connect->setVisible(true);
+    ui->pushButton_slam_disconnect->setVisible(false);
+    ui->textBrowser->append("Online SLAM disconnect!");
+}
+
+void EIC_Test::on_pushButton_valid_connect_clicked()
+{
+    // move to botton
+    connect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(RepeatSceneRetrieve(int)));
+    connect(this, SIGNAL(positionAttained(int)), this, SLOT(RepeatSceneRetrieve(int)));
+    connect(this, SIGNAL(Goforward(double)), this, SLOT(SLOTGoforward(double)));
+    ui->pushButton_valid_connect->setVisible(false);
+    ui->pushButton_valid_disconnect->setVisible(true);
+    ui->textBrowser->append("Valid connect!");
+}
+
+void EIC_Test::on_pushButton_valid_disconnect_clicked()
+{
+    disconnect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(RepeatSceneRetrieve(int)));
+    disconnect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+    ui->pushButton_valid_connect->setVisible(true);
+    ui->pushButton_valid_disconnect->setVisible(false);
+    ui->textBrowser->append("Vlid disconnect!");
+}
+
+void EIC_Test::RepeatSceneRetrieve(int)
+{
+//    int laser_nums[4] = {360, 720, 1080, 1440};
+    int laser_nums[4] = {30, 31, 32, 33};
+    if (valid_count == 4)
+    {
+        valid_count = 0;
+        emit Goforward(0.1);
+    }
+    else
+    {
+        QString filename =  ui->lineEdit_robot_filename->text() + QString("_%1_%2").arg(walk_count).arg(valid_count);
+        int scan_count = laser_nums[valid_count];
+        if (!ui->pushButton_robot_connect->isVisible())
+        {
+            ui->progressBar_robot->setMaximum(ui->doubleSpinBox_robot_laser_count->value() - 1);
+            myekfslam->myrobot->DataAcquisitionConti(
+                        ui->doubleSpinBox_robot_startangle->value(),
+                        scan_count,
+                        ui->doubleSpinBox_robot_endangle->value(),
+                        filename,
+                        ui->checkBox_robot_withcolor->isChecked(),
+                        ui->lineEdit_robot_camera_num->text().toInt());
+            ui->textBrowser->append(QString("Valid Count = %1").arg(valid_count));
+        }
+        else
+        {
+            ui->textBrowser->setTextColor(QColor(255, 0, 0));
+            ui->textBrowser->append("Please Connect First!");
+            ui->textBrowser->setTextColor(QColor(0, 0, 0));
+        }
+        valid_count++;
+    }
+}
+
+void EIC_Test::on_pushButton_valid_run_clicked()
+{
+    int laser_nums[4] = {30, 31, 32, 33};
+    if (valid_count == 4)
+    {
+        valid_count = 0;
+        emit Goforward(0.5);
+    }
+    else
+    {
+        QString filename =  ui->lineEdit_robot_filename->text() + QString("_%1_%2").arg(walk_count).arg(valid_count);
+        int scan_count = laser_nums[valid_count];
+        if (!ui->pushButton_robot_connect->isVisible())
+        {
+            ui->progressBar_robot->setMaximum(ui->doubleSpinBox_robot_laser_count->value() - 1);
+            myekfslam->myrobot->DataAcquisitionConti(
+                        ui->doubleSpinBox_robot_startangle->value(),
+                        scan_count,
+                        ui->doubleSpinBox_robot_endangle->value(),
+                        filename,
+                        ui->checkBox_robot_withcolor->isChecked(),
+                        ui->lineEdit_robot_camera_num->text().toInt());
+            ui->textBrowser->append(QString("Valid Count = %1").arg(valid_count));
+        }
+        else
+        {
+            ui->textBrowser->setTextColor(QColor(255, 0, 0));
+            ui->textBrowser->append("Please Connect First!");
+            ui->textBrowser->setTextColor(QColor(0, 0, 0));
+        }
+        valid_count++;
+    }
+}
+
+void EIC_Test::on_pushButton_valid_re_clicked()
+{
+    valid_count = ui->lineEdit_valid_valid_count->text().toInt();
+    walk_count = ui->lineEdit_valid_walk_count->text().toInt();
+    int laser_nums[4] = {30, 31, 32, 33};
+    if (valid_count == 4)
+    {
+        valid_count = 0;
+        if (walk_count < 5)
+            emit Goforward(0.5);
+    }
+    else
+    {
+        QString filename =  ui->lineEdit_robot_filename->text() + QString("_%1_%2").arg(walk_count).arg(valid_count);
+        int scan_count = laser_nums[valid_count];
+        if (!ui->pushButton_robot_connect->isVisible())
+        {
+            ui->progressBar_robot->setMaximum(ui->doubleSpinBox_robot_laser_count->value() - 1);
+            myekfslam->myrobot->DataAcquisitionConti(
+                        ui->doubleSpinBox_robot_startangle->value(),
+                        scan_count,
+                        ui->doubleSpinBox_robot_endangle->value(),
+                        filename,
+                        ui->checkBox_robot_withcolor->isChecked(),
+                        ui->lineEdit_robot_camera_num->text().toInt());
+            ui->textBrowser->append(QString("Valid Count = %1").arg(valid_count));
+        }
+        else
+        {
+            ui->textBrowser->setTextColor(QColor(255, 0, 0));
+            ui->textBrowser->append("Please Connect First!");
+            ui->textBrowser->setTextColor(QColor(0, 0, 0));
+        }
+        valid_count++;
+    }
+}
+
+void EIC_Test::SLOTGoforward(double dis)
+{
+    if (myekfslam->myrobot->right_dcmotor->isOpen() && myekfslam->myrobot->left_dcmotor->isOpen())
+    {
+        ui->textBrowser->append(QString("Go Forward %1m").arg(ui->doubleSpinBox_dcmotor_distance->value()));
+        myekfslam->myrobot->GoForward(dis,
+                           ui->doubleSpinBox_dcmotor_velocity->value());
+
+        int Pos_Stop_error = 1;
+        long int fir_pos = myekfslam->myrobot->right_dcmotor->GetPose();
+        long int sec_pos = myekfslam->myrobot->right_dcmotor->GetPose();
+        while (abs(sec_pos - fir_pos) > Pos_Stop_error)
+        {
+            fir_pos = sec_pos;
+            sec_pos = myekfslam->myrobot->right_dcmotor->GetPose();
+        }
+
+        fir_pos = myekfslam->myrobot->left_dcmotor->GetPose();
+        sec_pos = myekfslam->myrobot->left_dcmotor->GetPose();
+        while (abs(sec_pos - fir_pos) > Pos_Stop_error)
+        {
+            fir_pos = sec_pos;
+            sec_pos = myekfslam->myrobot->left_dcmotor->GetPose();
+        }
+
+        myekfslam->myrobot->left_dcmotor->Stop();
+        myekfslam->myrobot->right_dcmotor->Stop();
+        walk_count++;
+        emit positionAttained(1);
+    }
+    else
+    {
+        ui->textBrowser->append(QString("[Error] Please Open the both dcmotor first right: %1, left: %2")
+                                .arg(myekfslam->myrobot->right_dcmotor->isOpen())
+                                .arg(myekfslam->myrobot->left_dcmotor->isOpen()));
+    }
+}
+

@@ -23,6 +23,8 @@ public:
     cv::Mat GetLocalLandmarkMap(const std::vector<cv::Point2d>& localMapPointSets,const std::vector<Line>& lineSets,const std::vector<Corner>& cornerSets);
     cv::Mat GetLandmarkMap(){   return landmarkMap.clone();   }
     void DrawRobotPoseWithErrorEllipse(const RobotState robot,cv::Mat& img,bool showEllipse=true);
+
+    void Reset();
 private:
      cv::Mat landmarkMap;
 

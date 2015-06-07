@@ -199,6 +199,26 @@ private slots:
 
     void on_pushButton_slam_offline_clicked();
 
+    void on_pushButton_slam_offline_initial_clicked();
+
+    void on_pushButton_valid_test_clicked();
+
+    void on_pushButton_slam_connect_clicked();
+
+    void on_pushButton_slam_disconnect_clicked();
+
+    void on_pushButton_valid_connect_clicked();
+
+    void on_pushButton_valid_disconnect_clicked();
+
+    void RepeatSceneRetrieve(int);
+
+    void on_pushButton_valid_run_clicked();
+
+    void on_pushButton_valid_re_clicked();
+
+    void SLOTGoforward(double dis);
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;
@@ -243,14 +263,29 @@ private:
 
     void FindCurrentNodeEnd(const cv::Mat &gridMap,double intervalDistance, const cv::Point2d &currentStart,const cv::Point2d &goal ,cv::Point2d& currentEnd);
 
+////////////////////////////////////////////
+/// Offline SLAM
+///
+    lab405::MyEFKSLAM *Offline_SLAM;
 
+    ////////////////////////////
+    /// Valid Member
+    ///
+    std::size_t valid_count;
+    std::size_t walk_count;
 
 signals:
     void test();
 
     void TestFor(double,double);
+
+    /// test valid
+    void Goforward(double);
+
+    void positionAttained(int);
 //    StepMotor_Controller *step_motor;
 //    Laser_LMS291_Controller *laser291;
+
 };
 
 #endif // EIC_TEST_H

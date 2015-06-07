@@ -44,6 +44,8 @@ public:
     cv::Point2d GetRobotCenter(const cv::Point3d& pose );
     cv::Point2d GetRobotCenter(const RobotState& pose );
 
+    void Reset();
+
 private:
 
     cv::Mat girdMap;

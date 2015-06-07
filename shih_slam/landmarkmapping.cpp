@@ -73,7 +73,7 @@ void LandmarkMapping::DrawLine(const Line &line, const RobotState &robot, const 
        temp2.y=temp2.y/100.0*(1/pixel_meterFactor*scale)+center.y;
 
 
-       pt1.x = cvRound(temp2.x + 1000*(-b)); //cvRound §âdoubleÅÜ¦¨int
+       pt1.x = cvRound(temp2.x + 1000*(-b)); //cvRound ï¿½ï¿½doubleï¿½Ü¦ï¿½int
        pt1.y = cvRound(temp2.y + 1000*(a));
        pt2.y = cvRound(temp2.y - 1000*(a));
        pt2.x = cvRound(temp2.x - 1000*(-b));
@@ -159,7 +159,7 @@ void LandmarkMapping::DrawRobotPoseWithErrorEllipse(const RobotState robot, cv::
 
     if(showEllipse==true)
     {
-        cv::Mat EigenValue(robot.robotPositionMean.rows,robot.robotPositionMean.cols,CV_64F),EigenVector(robot.robotPositionCovariance.rows,robot.robotPositionCovariance.cols,CV_64F);  //¤j¤p­n¥i¥HÅÜ°Ê ©T©w¥u¯àµe¾÷¾¹¤H¾ò¶ê
+        cv::Mat EigenValue(robot.robotPositionMean.rows,robot.robotPositionMean.cols,CV_64F),EigenVector(robot.robotPositionCovariance.rows,robot.robotPositionCovariance.cols,CV_64F);  //ï¿½jï¿½pï¿½nï¿½iï¿½Hï¿½Ü°ï¿½ ï¿½Tï¿½wï¿½uï¿½ï¿½ï¿½eï¿½ï¿½ï¿½ï¿½ï¿½Hï¿½ï¿½ï¿½ï¿½
         cv::eigen(xyCovariance, EigenValue, EigenVector); //row
         double angle=atan2(EigenVector.ptr<double>(1)[0],EigenVector.ptr<double>(0)[0]);
 
@@ -172,4 +172,11 @@ void LandmarkMapping::DrawRobotPoseWithErrorEllipse(const RobotState robot, cv::
     cv::circle(img, cv::Point(x,y),4, cv::Scalar(0,255,0), -1 );
 
 
+}
+
+void LandmarkMapping::Reset()
+{
+    landmarkMap=cv::Mat(landmarkMap_rows,landmarkMap_cols,CV_8UC3); // initialize size of gridmap and set type to CV_64F
+    landmarkMap_originalPoint =cv::Point2d(150,500);  // unit: m
+    mapColor=cv::Scalar(0,0,255); // Red
 }

@@ -90,6 +90,21 @@ public:
 
     void MotionControlAlong(double Kp, const cv::Point2d &para, double FowardAngledegree, double tolerDegree, double distance);
 
+    ////////////////////////////////////////////////////////////////
+    /// Offline SLAM
+    void OfflineSLAMInitial(const std::string& savename, const std::size_t _laser_num, const bool _IsScene);
+
+    void OfflineSLAM();
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief ChangeGatingLine
+    /// \param _gl
+    /// Change slam parameters
+    void SetGatingLine(const double _gl) { gatingLine = _gl; }
+    void SetGatingCorner(const double _gc) { gatingCorner = _gc; }
+    void SetLineSize(const std::size_t _size){ lineExtracter.SetSizeThreshold(_size); }
+    void SetWeight(const int _weight){ weighting = _weight; }
+
 public slots:
     void Prediction();
 
@@ -107,6 +122,7 @@ signals:
     void MotorStop();
 
     void StartSceneScan(int);
+
 private:
     double gridDistance;
     bool checkBit;
@@ -116,8 +132,8 @@ private:
     bool motionMode;
 //    cv::Point2d odoValuePrevious; // x:right odo y:left odo
 //    cv::Point2d odoValueCurrent; // x:right odo y:left odo
-    RobotPOS odoValuePrevious; // x:right odo y:left odo
-    RobotPOS odoValueCurrent; // x:right odo y:left odo
+    RobotPOS odoValuePrevious; // first: right odo second:left odo
+    RobotPOS odoValueCurrent; // first:right odo second:left odo
 
     std::ofstream robotOutputFile;
     std::ofstream laserOutputFile;
@@ -191,6 +207,19 @@ private:
     QString imgfoldername;
 
     cv::Point2d pre_turn_pos;
+
+    //////////////////////////////////////////////////////
+    /// Offline SLAM member
+    ///
+    std::ifstream infile_robotstate;
+    std::ifstream infile_slamlaser;
+    std::size_t num_laser;
+    bool IsScene;
+    std::vector<cv::Point2d> ScenePose;
+    std::string offline_filename;
+    std::size_t save_count;
+
+
 };
 }
 #endif // MYEFKSLAM_H
