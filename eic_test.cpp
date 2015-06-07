@@ -2887,7 +2887,7 @@ void EIC_Test::RepeatSceneRetrieve(int)
     if (valid_count == 4)
     {
         valid_count = 0;
-        if (walk_count < 5)
+        if (walk_count < ui->lineEdit_valid_walk_step->text().toInt())
             emit Goforward(ui->lineEdit_valid_dis->text().toDouble());
     }
     else
@@ -2922,7 +2922,7 @@ void EIC_Test::on_pushButton_valid_run_clicked()
     if (valid_count == 4)
     {
         valid_count = 0;
-        if (walk_count < 5)
+        if (walk_count < ui->lineEdit_valid_walk_step->text().toInt())
             emit Goforward(ui->lineEdit_valid_dis->text().toDouble());
     }
     else
@@ -2959,7 +2959,7 @@ void EIC_Test::on_pushButton_valid_re_clicked()
     if (valid_count == 4)
     {
         valid_count = 0;
-        if (walk_count < 5)
+        if (walk_count < ui->lineEdit_valid_walk_step->text().toInt())
             emit Goforward(ui->lineEdit_valid_dis->text().toDouble());
     }
     else
