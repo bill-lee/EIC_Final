@@ -2872,7 +2872,8 @@ void EIC_Test::on_pushButton_valid_connect_clicked()
 void EIC_Test::on_pushButton_valid_disconnect_clicked()
 {
     disconnect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), this, SLOT(RepeatSceneRetrieve(int)));
-    disconnect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+    disconnect(this, SIGNAL(positionAttained(int)), this, SLOT(RepeatSceneRetrieve(int)));
+    disconnect(this, SIGNAL(Goforward(double)), this, SLOT(SLOTGoforward(double)));
     ui->pushButton_valid_connect->setVisible(true);
     ui->pushButton_valid_disconnect->setVisible(false);
     ui->textBrowser->append("Vlid disconnect!");
@@ -2881,11 +2882,12 @@ void EIC_Test::on_pushButton_valid_disconnect_clicked()
 void EIC_Test::RepeatSceneRetrieve(int)
 {
 //    int laser_nums[4] = {360, 720, 1080, 1440};
-    int laser_nums[4] = {30, 31, 32, 33};
+    int laser_nums[4] = {360, 720, 1080, 1440};
     if (valid_count == 4)
     {
         valid_count = 0;
-        emit Goforward(0.1);
+        if (walk_count < 5)
+            emit Goforward(ui->lineEdit_valid_dis->text().toDouble());
     }
     else
     {
@@ -2915,11 +2917,12 @@ void EIC_Test::RepeatSceneRetrieve(int)
 
 void EIC_Test::on_pushButton_valid_run_clicked()
 {
-    int laser_nums[4] = {30, 31, 32, 33};
+    int laser_nums[4] = {360, 720, 1080, 1440};
     if (valid_count == 4)
     {
         valid_count = 0;
-        emit Goforward(0.5);
+        if (walk_count < 5)
+            emit Goforward(ui->lineEdit_valid_dis->text().toDouble());
     }
     else
     {
@@ -2951,12 +2954,12 @@ void EIC_Test::on_pushButton_valid_re_clicked()
 {
     valid_count = ui->lineEdit_valid_valid_count->text().toInt();
     walk_count = ui->lineEdit_valid_walk_count->text().toInt();
-    int laser_nums[4] = {30, 31, 32, 33};
+    int laser_nums[4] = {360, 720, 1080, 1440};
     if (valid_count == 4)
     {
         valid_count = 0;
         if (walk_count < 5)
-            emit Goforward(0.5);
+            emit Goforward(ui->lineEdit_valid_dis->text().toDouble());
     }
     else
     {

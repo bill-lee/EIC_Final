@@ -201,8 +201,6 @@ private slots:
 
     void on_pushButton_slam_offline_initial_clicked();
 
-    void on_pushButton_valid_test_clicked();
-
     void on_pushButton_slam_connect_clicked();
 
     void on_pushButton_slam_disconnect_clicked();
