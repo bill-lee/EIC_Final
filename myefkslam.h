@@ -96,7 +96,7 @@ public:
     /// Offline SLAM
     void OfflineSLAMInitial(const std::string& savename, const std::size_t _laser_num, const bool _IsScene);
 
-    void OfflineSLAM();
+    void OfflineSLAM(const std::size_t _iter);
 
     /////////////////////////////////////////////////////////////////////////////////////////
     /// \brief ChangeGatingLine
@@ -104,7 +104,9 @@ public:
     /// Change slam parameters
     void SetGatingLine(const double _gl) { gatingLine = _gl; }
     void SetGatingCorner(const double _gc) { gatingCorner = _gc; }
-    void SetLineSize(const std::size_t _size){ lineExtracter.SetSizeThreshold(_size); }
+    void SetLineSize(const std::size_t _size){
+        std::cout << "SetLineSize = " << _size << std::endl;
+        lineExtracter.SetSizeThreshold(_size); }
     void SetWeight(const int _weight){ weighting = _weight; }
 
 public slots:

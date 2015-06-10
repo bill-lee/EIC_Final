@@ -7,6 +7,7 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
     cv::Point2d side1(0,0),side2(0,0);
     double maxDistance=0;
 
+//    std::cout << "sizethreshold = " << sizethreshold << std::endl;
     if(PointSite.size() < sizethreshold)  // ending condition, with condition of small than 10
         return ;
 
@@ -60,7 +61,7 @@ void LineExtraction::SplitAndMerge(const std::vector<cv::Point2d> &PointSite,std
     cv::Point2d side1(0,0),side2(0,0);
     double maxDistance=0;
 
-    if(PointSite.size() < 50) // ending condition, with condition of small than 10
+    if(PointSite.size() < sizethreshold) // ending condition, with condition of small than 10
     {
         return ;
     }

@@ -16,7 +16,7 @@
 class LineExtraction
 {
 public:
-    LineExtraction(double d=100.0, std::size_t _size = 50)
+    LineExtraction(double d=100.0, std::size_t _size = 10)
         : distanceThreshold(d), sizethreshold(_size)
     {
         lineImg=cv::Mat::zeros(500,500,CV_8UC3);
@@ -24,7 +24,9 @@ public:
 
     cv::Mat lineImg;
 
-    void SetSizeThreshold(const std::size_t _size){sizethreshold = _size;}
+    void SetSizeThreshold(const std::size_t _size){
+        std::cout << "SetSizeThreshold = " << _size << std::endl;
+        sizethreshold = _size;}
 
     void SplitAndMerge(const std::vector<cv::Point2d> &PointSite, std::vector<Line>& lineFeature);
     void SetDistanceThreshold(double num){  distanceThreshold=num;  }

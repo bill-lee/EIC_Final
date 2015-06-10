@@ -2823,7 +2823,7 @@ void EIC_Test::on_pushButton_26_clicked()
 
 void EIC_Test::on_pushButton_slam_offline_clicked()
 {
-    Offline_SLAM->OfflineSLAM();
+    Offline_SLAM->OfflineSLAM(ui->lineEdit_slam_iterations->text().toInt());
 
 }
 

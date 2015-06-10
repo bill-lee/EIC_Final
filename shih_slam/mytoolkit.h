@@ -57,6 +57,7 @@ public:
         cv::Mat cornerMean;  // polar coordinate: phi, r
         cv::Mat cornerCovariance;
 };
+
 class Feature
 {
 public:

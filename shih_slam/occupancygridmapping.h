@@ -20,7 +20,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////////////
     // constructor
     ///////////////////////////////////////////////////////////////////////////////////
-    OccupancyGridMapping(const int rows = 800, const int cols = 800, const int obstacle_width = 1, const int laserBeam_width = 1, double z = 2500, double a = CV_PI, double m = 0.05)
+    OccupancyGridMapping(const int rows = 1600/*800*/, const int cols = 1600/*800*/, const int obstacle_width = 1, const int laserBeam_width = 1, double z = 2500, double a = CV_PI, double m = 0.15/*0.05*/)
         : girdMap_rows(rows), girdMap_cols(cols), alpha(obstacle_width), beta(laserBeam_width), maxZ(z), aperture(a), pixel_meterFactor(m)
     {
         gridMap_originalPoint =cv::Point2d(150,500);  //unit:m
@@ -33,8 +33,8 @@ public:
     void GetLocalGridMap(const std::vector<double>& laserRangeData,cv::Mat& localMap);
     void InvLaserModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D,cv::Mat& gridMap,bool isGlobal=true);
     void InvLaserAvoidMaxDistModel(const double laserBeamRange, const double laserBeamAngle, const cv::Point3d &robotPose2D,cv::Mat& gridMap,bool isGlobal=true);
-    void InsertLocalGridMap(const std::vector<double>& laserRangeData,const cv::Point3d &robotPose2D);
-    void InsertLocalGridMap(const std::vector<double> &laserRangeData, const RobotState& robot);
+    void InsertLocalGridMap(const std::vector<double>& laserRangeData, const cv::Point3d &robotPose2D);
+    void InsertLocalGridMap(const std::vector<double>& laserRangeData, const RobotState& robot);
     void GetOccupancyGridMap(cv::Mat& bigGridMap);
     inline void SetGridMapOriginalPoint(const cv::Point2d& point){  gridMap_originalPoint.x=point.x; gridMap_originalPoint.y=point.y;   }
     inline cv::Point2d GetGridMapOriginalPoint(){return cv::Point2d(gridMap_originalPoint.x,gridMap_originalPoint.y);}

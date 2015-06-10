@@ -10,7 +10,7 @@ lab405::MyCornerExtractor::~MyCornerExtractor()
 
 }
 
-void lab405::MyCornerExtractor::GetCornerFeature(std::vector<double> _range_data)
+void lab405::MyCornerExtractor::GetCornerFeature(std::vector<double> _range_data, std::vector<Corner>& _cor)
 {
 //    std::ifstream infile(filename);
 
@@ -92,6 +92,16 @@ void lab405::MyCornerExtractor::GetCornerFeature(std::vector<double> _range_data
                 _show->points.push_back(point);
             }
 
+            Corner temp_cor;
+            convertCartesianToPolar(cloud->points.at(i + windows/2).x,
+                                    cloud->points.at(i + windows/2).y,
+                                    temp_cor.cornerMean);
+            // line Covariance, diagonal matrix
+            temp_cor.cornerCovariance.ptr<double>(0)[0]=2.0;//2
+            temp_cor.cornerCovariance.ptr<double>(1)[1]=0.025;//0.025
+            temp_cor.cornerCovariance.ptr<double>(0)[1]=0.0;
+            temp_cor.cornerCovariance.ptr<double>(1)[0]=0.0;
+            _cor.push_back(temp_cor);
 
 
 
@@ -113,6 +123,15 @@ void lab405::MyCornerExtractor::GetCornerFeature(std::vector<double> _range_data
 //    {
 //    }
 
+}
+
+void lab405::MyCornerExtractor::convertCartesianToPolar(const double x, const double y, cv::Mat& _mat)
+{
+    _mat = cv::Mat::zeros(2, 1, CV_64F);  //mean =2x1    build a pointer matrix
+    double r = sqrt(x*x + y*y);
+    double phi = atan2(y,x);
+    _mat.ptr<double>(0)[0] = r;
+    _mat.ptr<double>(0)[1] = phi;
 }
 
 bool lab405::MyCornerExtractor::CornerCheckXYZRGB(pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud, std::size_t windows, std::size_t start, cv::Point2d f_tor, double d_tor, double c_tor, cv::Point2d dis_var_tor)

@@ -3402,10 +3402,14 @@ void lab405::MyEFKSLAM::OfflineSLAMInitial(const string &savename, const std::si
     std::cout << "end" << std::endl;
 }
 
-void lab405::MyEFKSLAM::OfflineSLAM()
+void lab405::MyEFKSLAM::OfflineSLAM(const std::size_t _iter)
 {
-    for (int rep = 0; rep < 660; rep++)
+    for (int rep = 0; rep < _iter; rep++)
     {
+
+
+
+
         std::cout << "rep = " << rep << std::endl;
         bool arriveScene = false;
         /////////////////////////////
@@ -3494,10 +3498,12 @@ void lab405::MyEFKSLAM::OfflineSLAM()
 //        std::cout << std::endl;
         std::cout << "LaserRawData.size() = " << LaserRawData.size() << std::endl;
 
-        this->mycornerextractor.GetCornerFeature(LaserRawData);
+//        this->mycornerextractor.GetCornerFeature(LaserRawData, cor);
 
 
         this->mapper.RangesDataToPointsData(LaserRawData,LaserCatesianPoints);
+
+
         this->lineExtracter.SplitAndMerge(LaserCatesianPoints,line);
 
         ////////////////////////////////////////////////////////////////////////
@@ -3637,6 +3643,13 @@ void lab405::MyEFKSLAM::OfflineSLAM()
             this->mapper.InsertLocalLandmarkMap(LaserCatesianPoints, RobotStateAfterAdjust);
             landMarkImg = this->mapper.GetLandmarkMap();
 
+
+            cv::Mat temp_mat;
+            OccupancyGridMapping temp_grid;
+            temp_grid.InsertLocalGridMap(LaserRawData, cv::Point3d(0.0, 0.0, 0.0));
+            temp_grid.GetOccupancyGridMap(temp_mat);
+            cv::imshow("temp_mat", temp_mat);
+
             // Grid Map
             this->gridMapper.InsertLocalGridMap(LaserRawData, RobotStateAfterAdjust);
             this->gridMapper.GetOccupancyGridMap(OccupancyGridMapImg);
@@ -3761,9 +3774,9 @@ void lab405::MyEFKSLAM::OfflineSLAM()
 //            }
     }
     std::cout << "out" << std::endl;
-//    while(cv::waitKey(10) != 27)
-//    {
-//    }
+    while(cv::waitKey(10) != 27)
+    {
+    }
     cv::destroyAllWindows();
 }
 
