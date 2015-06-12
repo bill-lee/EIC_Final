@@ -272,6 +272,7 @@ private:
     std::size_t valid_count;
     std::size_t walk_count;
 
+    std::size_t navi_count;
 signals:
     void test();
 

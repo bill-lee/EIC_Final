@@ -9,6 +9,7 @@ EIC_Test::EIC_Test(QWidget *parent) :
     sensorsetup(new SensorSetup()),
     Offline_SLAM(new lab405::MyEFKSLAM()),
     valid_count(0), walk_count(0)
+  , navi_count(0)
 {
     Robot_Thread = new QThread(this);
     myekfslam->myrobot->moveToThread(Robot_Thread);
@@ -453,6 +454,8 @@ void EIC_Test::on_pushButton_dcmotor_front_clicked()
         ui->textBrowser->append(QString("Go Forward %1m").arg(ui->doubleSpinBox_dcmotor_distance->value()));
         myekfslam->myrobot->GoForward(ui->doubleSpinBox_dcmotor_distance->value(),
                            ui->doubleSpinBox_dcmotor_velocity->value());
+            navi_count++;
+        ui->label_count->setText(QString("%1").arg(navi_count));
     }
     else
     {
@@ -2676,6 +2679,8 @@ void EIC_Test::on_pushButton_slam_navi_clicked()
 {
     myekfslam->NavigationUpdate(ui->checkBox_slam_navi_scene->isChecked());
     ui->textBrowser->append(QString("Do SLAM!"));
+    if (ui->checkBox_slam_navi_scene->isChecked())
+        navi_count=0;
 }
 
 void EIC_Test::on_pushButton_dcmotor_oneleft_clicked()
@@ -2685,6 +2690,10 @@ void EIC_Test::on_pushButton_dcmotor_oneleft_clicked()
         ui->textBrowser->append(QString("One Left %1 degrees").arg(ui->doubleSpinBox_dcmotor_angle->value()));
         myekfslam->myrobot->TurnLeftOneLeg(ui->doubleSpinBox_dcmotor_angle->value(),
                           ui->doubleSpinBox_dcmotor_velocity->value());
+
+
+            navi_count++;
+        ui->label_count->setText(QString("%1").arg(navi_count));
     }
     else
     {
@@ -2701,6 +2710,9 @@ void EIC_Test::on_pushButton_dcmotor_oneright_clicked()
         ui->textBrowser->append(QString("One Right %1 degrees").arg(ui->doubleSpinBox_dcmotor_angle->value()));
         myekfslam->myrobot->TurnRightOneLeg(ui->doubleSpinBox_dcmotor_angle->value(),
                           ui->doubleSpinBox_dcmotor_velocity->value());
+
+            navi_count++;
+        ui->label_count->setText(QString("%1").arg(navi_count));
     }
     else
     {

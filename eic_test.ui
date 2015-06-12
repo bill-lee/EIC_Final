@@ -21,10 +21,13 @@
        <string>Display Panel</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_4">
-       <item row="0" column="0">
+       <item row="0" column="2">
+        <widget class="QTextBrowser" name="textBrowser"/>
+       </item>
+       <item row="0" column="1">
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>6</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -1302,8 +1305,8 @@
           <widget class="QPushButton" name="pushButton_slam_navi_init">
            <property name="geometry">
             <rect>
-             <x>430</x>
-             <y>340</y>
+             <x>420</x>
+             <y>390</y>
              <width>81</width>
              <height>51</height>
             </rect>
@@ -1318,7 +1321,7 @@
            </property>
            <property name="geometry">
             <rect>
-             <x>200</x>
+             <x>210</x>
              <y>330</y>
              <width>61</width>
              <height>51</height>
@@ -1395,10 +1398,10 @@
           <widget class="QPushButton" name="pushButton_slam_navi">
            <property name="geometry">
             <rect>
-             <x>430</x>
-             <y>410</y>
-             <width>81</width>
-             <height>51</height>
+             <x>400</x>
+             <y>300</y>
+             <width>141</width>
+             <height>81</height>
             </rect>
            </property>
            <property name="text">
@@ -1408,14 +1411,27 @@
           <widget class="QCheckBox" name="checkBox_slam_navi_scene">
            <property name="geometry">
             <rect>
-             <x>430</x>
-             <y>480</y>
+             <x>420</x>
+             <y>500</y>
              <width>73</width>
              <height>16</height>
             </rect>
            </property>
            <property name="text">
             <string>Scene ?</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_count">
+           <property name="geometry">
+            <rect>
+             <x>410</x>
+             <y>190</y>
+             <width>51</width>
+             <height>31</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;0&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </widget>
@@ -1485,7 +1501,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>valid_OK</string>
+            <string>20150612_outdoor_2</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_robot_filename">
@@ -1567,7 +1583,7 @@
             <double>0.100000000000000</double>
            </property>
            <property name="value">
-            <double>180.000000000000000</double>
+            <double>360.000000000000000</double>
            </property>
           </widget>
           <widget class="QPushButton" name="pushButton">
@@ -1784,7 +1800,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>1</string>
+            <string>0</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_robot_camera_num">
@@ -2289,7 +2305,7 @@
            <item row="0" column="0">
             <widget class="QTabWidget" name="tabWidget_2">
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_7">
               <attribute name="title">
@@ -2487,7 +2503,7 @@
                 </rect>
                </property>
                <property name="text">
-                <string>20150602_test</string>
+                <string>20150612_outdoor_2</string>
                </property>
               </widget>
               <widget class="QLineEdit" name="lineEdit_slam_tPoints">
@@ -2940,9 +2956,6 @@
          </widget>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QTextBrowser" name="textBrowser"/>
-       </item>
       </layout>
      </widget>
     </item>
@@ -2954,7 +2967,7 @@
      <x>0</x>
      <y>0</y>
      <width>1136</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
