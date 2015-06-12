@@ -70,6 +70,7 @@ void lab405::MyCornerExtractor::GetCornerFeature(std::vector<double> _range_data
             // pack r/g/b into rgb
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
+            /**/
 //            _show->points.push_back(point);
 
 //            point.x = cloud->points.at(i + windows/2).x;
@@ -83,6 +84,7 @@ void lab405::MyCornerExtractor::GetCornerFeature(std::vector<double> _range_data
 //            point.y = cloud->points.at(i + windows - 1).y;
 //            point.z = 0;
 //            _show->points.push_back(point);
+            /**/
 
             for (int j = 0; j < windows - 1; j++)
             {
@@ -184,13 +186,13 @@ bool lab405::MyCornerExtractor::CornerCheckXYZRGB(pcl::PointCloud<pcl::PointXYZR
                          cloud->points.at(start + windows - i - 2).y - cloud->points.at(start + windows - i - 1 ).y);
 
         double dis_vic = vic.x*vic.x + vic.y*vic.y;
-        std::cout << "vic = " << sqrt(dis_vic) << ", tor = " << 1 - (vic.x * vi.x + vic.y * vi.y)/(sqrt(dis_vic)*sqrt(a2));
+//        std::cout << "vic = " << sqrt(dis_vic) << ", tor = " << 1 - (vic.x * vi.x + vic.y * vi.y)/(sqrt(dis_vic)*sqrt(a2));
         dis_i.push_back(sqrt(dis_vic));
         if (1 - (vic.x * vi.x + vic.y * vi.y)/(sqrt(dis_vic)*sqrt(a2)) > c_tor)
             return false;
 
         double dis_vjc = vjc.x*vjc.x + vjc.y*vjc.y;
-        std::cout << ", vjc = " << sqrt(dis_vjc) << ", tor = " << 1 - (vjc.x * vj.x + vjc.y * vj.y)/(sqrt(dis_vjc)*sqrt(b2)) << std::endl;
+//        std::cout << ", vjc = " << sqrt(dis_vjc) << ", tor = " << 1 - (vjc.x * vj.x + vjc.y * vj.y)/(sqrt(dis_vjc)*sqrt(b2)) << std::endl;
         dis_j.push_back(sqrt(dis_vjc));
         if (1 - (vjc.x * vj.x + vjc.y * vj.y)/(sqrt(dis_vjc)*sqrt(b2)) > c_tor)
             return false;
@@ -221,7 +223,7 @@ bool lab405::MyCornerExtractor::CornerCheckXYZRGB(pcl::PointCloud<pcl::PointXYZR
         acc += (dis_i.at(i) - m_dis_i)*(dis_i.at(i) - m_dis_i);
     double stdv_dis_i = sqrt(acc/dis_i.size());
     double cv_i = stdv_dis_i/m_dis_i;
-    std::cout << "stdv_dis_i = " << stdv_dis_i << ", m_dis_i = " << m_dis_i << ", cv_i = " << cv_i << std::endl;
+//    std::cout << "stdv_dis_i = " << stdv_dis_i << ", m_dis_i = " << m_dis_i << ", cv_i = " << cv_i << std::endl;
     if (cv_i > dis_var_tor.x)
         return false;
 
@@ -230,7 +232,7 @@ bool lab405::MyCornerExtractor::CornerCheckXYZRGB(pcl::PointCloud<pcl::PointXYZR
         acc += (dis_j.at(i) - m_dis_j)*(dis_j.at(i) - m_dis_j);
     double stdv_dis_j = sqrt(acc/dis_j.size());
     double cv_j = stdv_dis_j/m_dis_j;
-    std::cout << "stdv_dis_j = " << stdv_dis_j << ", m_dis_j = " << m_dis_j << ", cv_j = " << cv_j << std::endl;
+//    std::cout << "stdv_dis_j = " << stdv_dis_j << ", m_dis_j = " << m_dis_j << ", cv_j = " << cv_j << std::endl;
     if (cv_j > dis_var_tor.y)
         return false;
 

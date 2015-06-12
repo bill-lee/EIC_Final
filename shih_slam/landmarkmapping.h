@@ -9,14 +9,14 @@
 class LandmarkMapping
 {
 public:
-    LandmarkMapping(const int rows=800,const int cols=800,const double a=(double)CV_PI,const double scale=0.05 )
-    :landmarkMap_rows(rows),landmarkMap_cols(cols),aperture(a),pixel_meterFactor(scale)
+    LandmarkMapping(const int rows=800,const int cols=800,const double a=(double)CV_PI,const double scale=0.05, std::size_t _LaserResolution = 361)
+    :landmarkMap_rows(rows),landmarkMap_cols(cols),aperture(a),pixel_meterFactor(scale), LaserResolution(_LaserResolution)
     {
         landmarkMap=cv::Mat(landmarkMap_rows,landmarkMap_cols,CV_8UC3); // initialize size of gridmap and set type to CV_64F
         landmarkMap_originalPoint =cv::Point2d(150,500);  // unit: m
         mapColor=cv::Scalar(0,0,255); // Red
     }
-    void RangesDataToPointsData(const std::vector<double>& laserRangesData,std::vector<cv::Point2d>& laserPointsData);
+    void RangesDataToPointsData(const std::vector<double>& laserRangesData,std::vector<cv::Point2d>& laserPointsData, double trucate_dis = 5000);
     void DrawLine(const Line& line,const RobotState &robot=RobotState(),const cv::Scalar& s1=cv::Scalar(0,255,0),const int lineWidth=1,const cv::Point2d& center=cv::Point2d(0,0),double scale=1,cv::Mat& showImg=cv::Mat());
     void DrawLine(const Feature& line,const RobotState &robot=RobotState(),const cv::Scalar& s1=cv::Scalar(0,255,0),const int lineWidth=1,const cv::Point2d& center=cv::Point2d(0,0),double scale=1,cv::Mat& showImg=cv::Mat());
     void InsertLocalLandmarkMap(std::vector<cv::Point2d>& laserPointsData,const RobotState& robot);
@@ -35,6 +35,7 @@ private:
      cv::Point2d landmarkMap_originalPoint; //grid map original point
      cv::Scalar mapColor;
 
+     const std::size_t LaserResolution;
 };
 
 #endif // LANDMARKMAPPING_H

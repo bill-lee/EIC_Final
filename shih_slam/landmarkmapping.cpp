@@ -1,10 +1,10 @@
 #include "landmarkmapping.h"
 
-void LandmarkMapping::RangesDataToPointsData(const std::vector<double> &laserRangesData, std::vector<cv::Point2d> &laserPointsData)
+void LandmarkMapping::RangesDataToPointsData(const std::vector<double> &laserRangesData, std::vector<cv::Point2d> &laserPointsData, double trucate_dis)
 {   // robot coordinate
 
     // pi/360
-    double resolution = aperture/(laserRangesData.size() - 1);
+    double resolution = aperture/(LaserResolution - 1);
     laserPointsData.clear();
     laserPointsData.reserve(laserRangesData.size());
 
@@ -12,7 +12,7 @@ void LandmarkMapping::RangesDataToPointsData(const std::vector<double> &laserRan
     {
         double angle = (i*resolution) /*- aperture/2.0*/;
 
-        if(laserRangesData[i] < 2000 && laserRangesData[i] > 30)
+        if(laserRangesData[i] < trucate_dis && laserRangesData[i] > 30)
         {
             double r = laserRangesData[i];
             double x = r*cos(angle);

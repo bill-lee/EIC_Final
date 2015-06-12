@@ -2667,6 +2667,8 @@ void lab405::MyEFKSLAM::NavigationUpdate(bool scene)
                         << std::fixed << std::setprecision(std::numeric_limits<long int>::digits10)
                         << odoValueCurrent.first<< " "
                         << odoValueCurrent.second;
+        if (scene)
+            robotOutputFile << " scene!";
 //        robotOutputFile << saveFileIndex << " " << odoValueCurrent.first<< " " << odoValueCurrent.second;  //encoder
         laserOutputFile << saveFileIndex << " ";
         for(int i = 0; i != LaserRawData.size(); ++i)
@@ -3768,15 +3770,15 @@ void lab405::MyEFKSLAM::OfflineSLAM(const std::size_t _iter)
             save_count++;
 //            count++;
 
-            cv::waitKey(1);
-//            while(cv::waitKey(10) != 27)
-//            {
-//            }
+//            cv::waitKey(1);
+            while(cv::waitKey(10) != 27)
+            {
+            }
     }
-    std::cout << "out" << std::endl;
-    while(cv::waitKey(10) != 27)
-    {
-    }
+//    std::cout << "out" << std::endl;
+//    while(cv::waitKey(10) != 27)
+//    {
+//    }
     cv::destroyAllWindows();
 }
 
