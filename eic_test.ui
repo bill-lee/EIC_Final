@@ -27,7 +27,7 @@
        <item row="0" column="1">
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>2</number>
+          <number>3</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -1501,7 +1501,7 @@
             </rect>
            </property>
            <property name="text">
-            <string>20150612_outdoor_2</string>
+            <string>20150615_outdoor_1</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_robot_filename">
@@ -1539,7 +1539,7 @@
             <double>0.100000000000000</double>
            </property>
            <property name="value">
-            <double>360.000000000000000</double>
+            <double>720.000000000000000</double>
            </property>
           </widget>
           <widget class="QDoubleSpinBox" name="doubleSpinBox_robot_startangle">
@@ -2503,7 +2503,7 @@
                 </rect>
                </property>
                <property name="text">
-                <string>20150612_outdoor_2</string>
+                <string>20150615_outdoor_1</string>
                </property>
               </widget>
               <widget class="QLineEdit" name="lineEdit_slam_tPoints">
