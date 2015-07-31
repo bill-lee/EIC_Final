@@ -26,7 +26,7 @@ class MyEFKSLAM : public QObject
 public:
     MyEFKSLAM(double w = 58.0, int velocity = 100,
               const cv::Point2d& point = cv::Point2d (150,500),
-              int num = 0, double gl = 0.25/*0.25*/, double gc = 0,
+              int num = 0, double gl = 0.27/*0.25*/, double gc = 0,
               double t = 1.0, double n = 20.0, int weight = 5/*10*/,
               double _Kr = 3.5, double _Kl = 3.5, double _dis = 200);
     ~MyEFKSLAM();

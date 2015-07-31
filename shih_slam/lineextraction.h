@@ -16,7 +16,7 @@
 class LineExtraction
 {
 public:
-    LineExtraction(double d=100.0, std::size_t _size = 25)
+    LineExtraction(double d=100.0, std::size_t _size = 100)
         : distanceThreshold(d), sizethreshold(_size)
     {
         lineImg=cv::Mat::zeros(500,500,CV_8UC3);
