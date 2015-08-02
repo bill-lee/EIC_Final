@@ -217,6 +217,14 @@ private slots:
 
     void SLOTGoforward(double dis);
 
+    void on_pushButton_cor_ini_clicked();
+
+    void on_pushButton_cor_emit_clicked();
+
+    void on_pushButton_cor_connect_clicked();
+
+    void on_pushButton_cor_disconnect_clicked();
+
 private:
     Ui::EIC_Test *ui;
     lab405::MyEFKSLAM *myekfslam;

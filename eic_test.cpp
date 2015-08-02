@@ -3038,3 +3038,39 @@ void EIC_Test::SLOTGoforward(double dis)
     }
 }
 
+
+void EIC_Test::on_pushButton_cor_ini_clicked()
+{
+    connect(myekfslam->PcontrolTimer, SIGNAL(timeout()), myekfslam, SLOT(PControlTest()));
+    myekfslam->PControlInitial(
+                ui->spinBox_slam_sceneNum->value(),
+                ui->spinBox_slam_x0_2->value(),
+                ui->spinBox_slam_x_2->value(),
+                ui->spinBox_slam_y_2->value(),
+                ui->doubleSpinBox->value(),
+                ui->lineEdit_slam_savename->text().toStdString());
+}
+
+void EIC_Test::on_pushButton_cor_emit_clicked()
+{
+    emit myekfslam->StartSceneScan(ui->spinBox_slam_scene->value());
+}
+
+void EIC_Test::on_pushButton_cor_connect_clicked()
+{
+    // move to botton
+    connect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), myekfslam, SLOT(FinishSceneAndStartTimer(int)));
+    connect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+    ui->pushButton_slam_connect->setVisible(false);
+    ui->pushButton_slam_disconnect->setVisible(true);
+    ui->textBrowser->append("Online SLAM connect!");
+}
+
+void EIC_Test::on_pushButton_cor_disconnect_clicked()
+{
+    disconnect(myekfslam->myrobot, SIGNAL(FinishedDataAquisition(int)), myekfslam, SLOT(FinishSceneAndStartTimer(int)));
+    disconnect(myekfslam, SIGNAL(StartSceneScan(int)), this, SLOT(SceneScan(int)));
+    ui->pushButton_slam_connect->setVisible(true);
+    ui->pushButton_slam_disconnect->setVisible(false);
+    ui->textBrowser->append("Online SLAM disconnect!");
+}

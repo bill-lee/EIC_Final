@@ -999,6 +999,15 @@ void lab405::MyEFKSLAM::PControlTest()
     std::cout << "rho = " << para.x <<", theta = " << para.y << std::endl;
 
 
+
+
+    MotionControlAlong(1.0, para, 0, 5.0, 1.6);
+
+
+/*
+    //////////////////////////////////////////////////////////
+    /// 207 experiment setting
+    ///
     //150
     //150
     //140
@@ -1071,7 +1080,7 @@ void lab405::MyEFKSLAM::PControlTest()
         std::cout << "Along Wall!" << std::endl;
         MotionControlAlong(1.0, para, 0, 5.0, 1.6);
     }
-
+*/
 
 
     ////////////////////////////////////////////////////////////////////////
